@@ -7,6 +7,11 @@ name = "pypi"
 flask = "*"
 flask-mail = "*"
 flask-sqlalchemy = "*"
+flask-migrate = "*"
+passlib = "*"
+flask-script = "*"
+"psycopg2" = "*"
+flask-admin = "*"
 
 [dev-packages]
 
