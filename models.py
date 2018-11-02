@@ -5,7 +5,7 @@ from mixins import dbMixin
 db = SQLAlchemy()
 
 
-class User(db.Model):
+class User(dbMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -20,17 +20,22 @@ class User(db.Model):
         self.email = email
         self.password = pbkdf2_sha256.hash(password)
 
-class Participant(db.Model):
+class Participant(dbMixin, db.Model):
     __tablename__ = "participants"
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(20), nullable=False)
     last_name = db.Column(db.String(20), nullable=False)
-    hint = db.Column(db.String(20))
+    hint = db.Column(db.String(120))
+    address = db.Column(db.String(200))
     email = db.Column(db.String(120), unique=True, nullable=False)
 
     def __init__(self, first_name="test",
                  last_name="test",
+                 hint="test test",
+                 address="test street",
                  email="test@test.io"):
         self.first_name = first_name
-        self.last_name = lasst_name
+        self.last_name = last_name
         self.email = email
+        self.hint = hint
+        self.address = address
