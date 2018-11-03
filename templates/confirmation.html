@@ -4,7 +4,6 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -27,34 +26,9 @@
     <div class="container">
       <div class="row">
         <div class="col-md-6 offset-md-3">
-
-          <br/></br>
-          <h1>Register for SECret Santa</h1>
-          {% if message %}
-            <div class="alert alert-danger" style="opacity:0.8;">
-              {{ message }}
-            </div>
-          {% endif %}
-          <form method="post" action="/register">
-            <label for="first_name">First Name : </label>
-            <input type="text" name="first_name" class="form-control" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="Stupid">
-            <br/>
-            <label for="last_name">Last Name : </label>
-            <input type="text" name="last_name" class="form-control" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="Alex">
-            <br/>
-            <label for="email">Email : </label>
-            <input type="text" name="email" class="form-control" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="stupidalex@plattsburgh.edu">
-            <br/>
-            <label for="hint">Hint : </label>
-            <textarea placeholder="Hint for your SECret Santa" name="hint"></textarea>
-            <br/><br/>
-            <label form="address">Address : </label>
-            <textarea placeholder="Your shipping address so they can come murder you" name="address"></textarea>
-            <br/><br/>
-            <button type="submit" class="btn btn-primary">Sign me the fuck up</button>
-          </form>
-          <br/><br/><br/><br/>
-
+          <br/><br/>
+            <p>Hey {{ data.first_name }}! thanks for signing up for SECret Santa. You will notified via this email address when the pairs are made. If the shipping address below looks alright to you, you're all set.</p>
+            <h2>{{ data.address }}</h2>
         </div>
     </div>
     </div>

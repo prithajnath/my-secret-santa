@@ -27,6 +27,18 @@ mail = Mail(app)
 admin.register(app, db)
 
 
+def send_email(sender, subject,recipients, template, data):
+    msg = Message(subject, sender=sender, recipients=recipients)
+    msg.html = render_template(template, data=data)
+
+    sent = True
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except:
+            sent = False
+    return sent
+
 # Routes
 @app.route("/register", methods=['POST'])
 def register():
@@ -51,7 +63,9 @@ def register():
 
     new_participant.save_to_db(db)
 
-    return render_template("success.html", data={"first_name":first_name, "last_name":last_name})
+    if send_email('platts.sec@gmail.com','SECret Confirmation',[email], "confirmation.html", {"first_name":first_name, "address":address}):
+        return render_template("success.html", data={"first_name":first_name, "last_name":last_name})
+    return render_template("index.html", message="Are you sure that was a valid email? :/")
 
     # except:
     #     return render_template("index.html", message="Something went wrong. Please try again :(")
