@@ -1,11 +1,9 @@
-from flask import Flask, render_template, request, redirect, send_from_directory
+from flask import Flask, render_template, request, redirect, jsonify
 from models import db, User, Participant
 from flask_mail import Mail, Message
 from flask_login import LoginManager, login_user, logout_user, login_required
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField
-from wtforms.validators import InputRequired, Length
 from flask_bootstrap import Bootstrap
+from forms import LoginForm, PairForm
 
 import os
 import admin
@@ -38,11 +36,6 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
-class LoginForm(FlaskForm):
-    username = StringField('username', validators=[InputRequired(), Length(min=4, max=15)])
-    password = PasswordField('password', validators=[InputRequired(), Length(min=8, max=80)])
-    remember = BooleanField('remember')
-
 def send_email(sender, subject,recipients, template, data):
     msg = Message(subject, sender=sender, recipients=recipients)
     msg.html = render_template(template, data=data)
@@ -56,6 +49,50 @@ def send_email(sender, subject,recipients, template, data):
     return sent
 
 # Routes
+@app.route("/santa", methods=['GET','POST'])
+@login_required
+def create_pairs():
+    form = PairForm()
+    if form.validate_on_submit():
+        from random import shuffle
+        admin_message = form.message.data
+        participants_og = [i for i in Participant.query.all()]
+        participants_clone = [j for j in participants_og]
+
+        def validate_shuffle(a,b):
+            '''This is to make sure no one is their own SECret Santa'''
+            correct_shuffle=True
+            for n in range(len(a)):
+                if a[n] == b[n]:
+                    correct_shuffle = False
+                    break
+            return correct_shuffle
+
+        while True:
+            for _ in range(10000):
+                shuffle(participants_clone)
+            if validate_shuffle(participants_og, participants_clone):
+                break
+
+        pairs = zip(participants_og, participants_clone)
+        for x, y in pairs:
+            send_email(
+                'platts.sec@gmail.com',
+                'SECret Santa!!!',
+                [x.email],
+                "pair.html",
+                    {
+                        "santa":x.first_name,
+                        "person":f"{y.first_name} {y.last_name}",
+                        "hint":y.hint,
+                        "address":y.address,
+                        "admin":admin_message
+                    }
+                )
+        return render_template("santa.html", form=form, message="Pairs successfully created")
+
+    return render_template("santa.html", form=form)
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
