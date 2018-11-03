@@ -1,11 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
 from passlib.hash import pbkdf2_sha256
 from mixins import dbMixin
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
 
-class User(dbMixin, db.Model):
+class User(dbMixin, UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -19,6 +20,10 @@ class User(dbMixin, db.Model):
         self.username = username
         self.email = email
         self.password = pbkdf2_sha256.hash(password)
+
+    def verify_hash(self, password, hash):
+        return pbkdf2_sha256.verify(password, hash)
+
 
 class Participant(dbMixin, db.Model):
     __tablename__ = "participants"

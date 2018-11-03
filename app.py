@@ -1,7 +1,11 @@
 from flask import Flask, render_template, request, redirect, send_from_directory
 from models import db, User, Participant
 from flask_mail import Mail, Message
-
+from flask_login import LoginManager, login_user, logout_user, login_required
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField
+from wtforms.validators import InputRequired, Length
+from flask_bootstrap import Bootstrap
 
 import os
 import admin
@@ -22,10 +26,22 @@ app.config.update(dict(
     CSRF_ENABLED = True
 ))
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+Bootstrap(app)
 db.init_app(app)
 mail = Mail(app)
 admin.register(app, db)
+login_manager = LoginManager()
+login_manager.init_app(app)
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
+
+class LoginForm(FlaskForm):
+    username = StringField('username', validators=[InputRequired(), Length(min=4, max=15)])
+    password = PasswordField('password', validators=[InputRequired(), Length(min=8, max=80)])
+    remember = BooleanField('remember')
 
 def send_email(sender, subject,recipients, template, data):
     msg = Message(subject, sender=sender, recipients=recipients)
@@ -40,6 +56,23 @@ def send_email(sender, subject,recipients, template, data):
     return sent
 
 # Routes
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user.verify_hash(form.password.data, user.password):
+            login_user(user)
+            return redirect('/admin')
+    return render_template('login.html', form=form)
+
+@app.route("/logout", methods=['GET', 'POST'])
+@login_required
+def logout():
+    logout_user()
+    return render_template('index.html')
+
+
 @app.route("/register", methods=['POST'])
 def register():
     first_name = request.form['first_name']

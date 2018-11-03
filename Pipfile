@@ -12,6 +12,10 @@ passlib = "*"
 flask-script = "*"
 "psycopg2" = "*"
 flask-admin = "*"
+flask-login = "*"
+flask-wtf = "*"
+flask-bootstrap = "*"
+wtforms = "*"
 
 [dev-packages]
 
