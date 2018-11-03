@@ -1,0 +1,20 @@
+body {
+    background: repeating-linear-gradient(
+                45deg,
+                #ff7878	,
+                #ff7878	30px,
+                #74d680	10px,
+                #74d680	50px
+                );
+} 
+
+.card--wrapper {
+    width: 660px;
+    height: 500px;
+    margin: 0 auto;
+    border: 4px dotted red;
+    border-radius: 3px;
+    padding: 20px;
+    background-color: #ffffff;
+}
+

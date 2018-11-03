@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet">
       <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
@@ -16,6 +15,7 @@
         height: 500px;
       }
       </style>
+    <link rel="stylesheet" href="/static/css/secmas.css">
     <title>SECret m-fking Santa</title>
   </head>
   <style>
@@ -24,11 +24,8 @@
   }
   </style>
   <body>
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6 offset-md-3">
+    <div class="card--wrapper">
 
-          <br/></br>
           <h1>Register for SECret Santa</h1>
           {% if message %}
             <div class="alert alert-danger" style="opacity:0.8;">
@@ -53,10 +50,6 @@
             <br/><br/>
             <button type="submit" class="btn btn-primary">Sign me the fuck up</button>
           </form>
-          <br/><br/><br/><br/>
-
-        </div>
-    </div>
     </div>
 
     <!-- Optional JavaScript -->
