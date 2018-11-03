@@ -20,7 +20,7 @@ app.config.update(dict(
     MAIL_USE_SSL = False,
     MAIL_USERNAME = f"{os.environ.get('MAIL_USERNAME')}@gmail.com",
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD'),
-    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI'),
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL'),
     SQLALCHEMY_TRACK_MODIFICATIONS = True,
     SECRET_KEY = os.environ.get('SECRET_KEY'),
     CSRF_ENABLED = True
