@@ -149,7 +149,7 @@ def register():
             data={
                     "first_name":first_name,
                     "last_name":last_name,
-                    "gif":santa_gif_url.strip(".gif/")
+                    "gif":santa_gif_url
                 }
             )
     return render_template("index.html", message="Are you sure that was a valid email? :/")
