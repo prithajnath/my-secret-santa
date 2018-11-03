@@ -28,11 +28,11 @@ class User(dbMixin, UserMixin, db.Model):
 class Participant(dbMixin, db.Model):
     __tablename__ = "participants"
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(20), nullable=False)
-    last_name = db.Column(db.String(20), nullable=False)
-    hint = db.Column(db.String(120))
-    address = db.Column(db.String(200))
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    first_name = db.Column(db.String(200), nullable=False)
+    last_name = db.Column(db.String(200), nullable=False)
+    hint = db.Column(db.String(500))
+    address = db.Column(db.String(500))
+    email = db.Column(db.String(200), unique=True, nullable=False)
 
     def __init__(self, first_name="test",
                  last_name="test",
