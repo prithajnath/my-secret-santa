@@ -16,6 +16,7 @@ flask-login = "*"
 flask-wtf = "*"
 flask-bootstrap = "*"
 wtforms = "*"
+requests = "*"
 
 [dev-packages]
 

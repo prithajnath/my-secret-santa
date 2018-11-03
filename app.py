@@ -8,6 +8,8 @@ from forms import LoginForm, PairForm
 import os
 import admin
 
+GIPHY_API_KEY = os.environ.get('GIPHY_API_KEY')
+
 app = Flask(__name__)
 app.config.update(dict(
 # email server
@@ -112,6 +114,10 @@ def logout():
 
 @app.route("/register", methods=['POST'])
 def register():
+    from random import choice
+    import requests as r
+    import json
+
     first_name = request.form['first_name']
     last_name = request.form['last_name']
     email = request.form['email']
@@ -121,6 +127,10 @@ def register():
     participant = Participant.query.filter_by(email=email).first()
     if participant:
         return render_template("index.html", message="You already registered you dumb fuck")
+
+    giphy = r.get(f"https://api.giphy.com/v1/gifs/search?q=santa&api_key={GIPHY_API_KEY}")
+    gifs = json.loads(giphy.content)['data']
+    santa_gif_url = choice(gifs)['images']['downsized_medium']['url']
 
     # try:
     new_participant = Participant(
@@ -134,7 +144,14 @@ def register():
     new_participant.save_to_db(db)
 
     if send_email('platts.sec@gmail.com','SECret Confirmation',[email], "confirmation.html", {"first_name":first_name, "address":address}):
-        return render_template("success.html", data={"first_name":first_name, "last_name":last_name})
+        return render_template(
+            "success.html",
+            data={
+                    "first_name":first_name,
+                    "last_name":last_name,
+                    "gif":santa_gif_url.strip(".gif/")
+                }
+            )
     return render_template("index.html", message="Are you sure that was a valid email? :/")
 
     # except:
