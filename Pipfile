@@ -17,6 +17,7 @@ flask-wtf = "*"
 flask-bootstrap = "*"
 wtforms = "*"
 requests = "*"
+gunicorn = "*"
 
 [dev-packages]
 
