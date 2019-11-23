@@ -81,7 +81,9 @@ def edit_profile():
         current_user.participant.save_to_db(db)
 
         return redirect("/profile")
-    return render_template("edit_profile.html", form=form)
+    hint = current_user.participant.hint
+    address = current_user.participant.address
+    return render_template("edit_profile.html", form=form, hint=hint, address=address)
 
 @app.route("/profile", methods=['GET','POST'])
 @login_required
