@@ -50,7 +50,7 @@ class CreateProfiles(Command):
                     sent = send_email(
                         'platts.sec@gmail.com',
                         'You got a password!!!',
-                        participant.email,
+                        [participant.email],
                         "password.html",
                         {
                             "first_name": participant.first_name,
