@@ -3,7 +3,7 @@ from models import db, User, Participant
 from flask_mail import Mail, Message
 from flask_login import LoginManager, login_user, logout_user, login_required
 from flask_bootstrap import Bootstrap
-from forms import LoginForm, PairForm
+from forms import LoginForm, PairForm, ParticipantLoginForm
 
 import os
 import admin
@@ -51,6 +51,11 @@ def send_email(sender, subject,recipients, template, data):
     return sent
 
 # Routes
+@app.route("/profile", methods=['GET','POST'])
+@login_required
+def participants_profile():
+    return render_template("profile.html")
+
 @app.route("/santa", methods=['GET','POST'])
 @login_required
 def create_pairs():
@@ -102,7 +107,10 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user.verify_hash(form.password.data, user.password):
             login_user(user)
-            return redirect('/admin')
+            if user.admin:
+                return redirect('/admin')
+            else:
+                return redirect('/profile')
     return render_template('login.html', form=form)
 
 @app.route("/logout", methods=['GET', 'POST'])
@@ -143,7 +151,19 @@ def register():
 
     new_participant.save_to_db(db)
 
-    if send_email('platts.sec@gmail.com','SECret Confirmation',[email], "confirmation.html", {"first_name":first_name, "address":address}):
+    if os.environ.get("ENVIRONMENT") != 'test':
+
+        if send_email('platts.sec@gmail.com','SECret Confirmation',[email], "confirmation.html", {"first_name":first_name, "address":address}):
+            return render_template(
+                "success.html",
+                data={
+                        "first_name":first_name,
+                        "last_name":last_name,
+                        "gif":santa_gif_url
+                    }
+                )
+        return render_template("index.html", message="Are you sure that was a valid email? :/")
+    else:
         return render_template(
             "success.html",
             data={
@@ -152,8 +172,6 @@ def register():
                     "gif":santa_gif_url
                 }
             )
-    return render_template("index.html", message="Are you sure that was a valid email? :/")
-
     # except:
     #     return render_template("index.html", message="Something went wrong. Please try again :(")
 
