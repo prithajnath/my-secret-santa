@@ -1,5 +1,7 @@
 
+
 <!doctype html>
+{% import "bootstrap/wtf.html" as wtf %}
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -55,12 +57,14 @@
         </div>
         <div class="col-sm-2 offset-md-3">
           <br/><br/>
-          <h2>Email</h2>
-          <p>{{ current_user.email }}</p>
-          <h2>Hint</h2>
-          <p>{{ current_user.participant.hint }}</p>
-          <h2>Address</h2>
-          <p>{{ current_user.participant.address }}</p>
+            <form method="POST" action="/edit_profile">
+              {{ form.hidden_tag() }}
+              <h2>Hint</h2>
+              <p>{{ wtf.form_field(form.hint) }}</p>
+              <h2>Address</h2>
+              <p>{{ wtf.form_field(form.address) }}</p>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </form>
         </div>
     </div>
     </div>

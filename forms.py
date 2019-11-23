@@ -14,3 +14,7 @@ class ParticipantLoginForm(FlaskForm):
 
 class PairForm(FlaskForm):
     message = TextAreaField('Admin message')
+
+class ProfileEditForm(FlaskForm):
+    hint = TextAreaField(validators=[InputRequired()])
+    address = TextAreaField(validators=[InputRequired()])
