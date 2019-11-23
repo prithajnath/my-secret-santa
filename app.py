@@ -4,9 +4,12 @@ from flask_mail import Mail, Message
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bootstrap import Bootstrap
 from forms import LoginForm, PairForm, ParticipantLoginForm, ProfileEditForm
+from random import choice
 
 import os
 import admin
+import requests as r
+import json
 
 GIPHY_API_KEY = os.environ.get('GIPHY_API_KEY')
 
@@ -126,6 +129,7 @@ def login():
                 return redirect('/admin')
             else:
                 return redirect('/profile')
+
     return render_template('login.html', form=form)
 
 @app.route("/logout", methods=['GET', 'POST'])
@@ -137,9 +141,6 @@ def logout():
 
 @app.route("/register", methods=['POST'])
 def register():
-    from random import choice
-    import requests as r
-    import json
 
     first_name = request.form['first_name']
     last_name = request.form['last_name']

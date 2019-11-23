@@ -54,8 +54,9 @@ class CreateProfiles(Command):
                         "password.html",
                         {
                             "first_name": participant.first_name,
+                            "username": f"{participant.first_name.lower()}{participant.last_name.lower()}",
                             "password": password,
-                            "url": f"{environ.get('PROTOCOL')}://{environ.get('HOSTNAME')}/profile"
+                            "url": f"{environ.get('PROTOCOL')}://{environ.get('HOSTNAME')}/login"
                         }
                     )
 

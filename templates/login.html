@@ -18,16 +18,28 @@
   </head>
   <body>
     <br/><br/>
-    <div class="container text-center">
-      <div class="col-sm-6 offset-md-3">
-        <form method="POST" action="/login">
-            <div class="form-group">
-              {{ form.hidden_tag() }}
-              {{ wtf.form_field(form.username) }}
-              {{ wtf.form_field(form.password) }}
-              {{ wtf.form_field(form.remember) }}
-            <button type="submit" class="btn btn-primary">Submit</button>
-      </form>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-2">
+          <br/><br/>
+          <img src="https://media3.giphy.com/media/3o7TKPeEEjTLB7ftks/giphy.gif"/>
+        </div>
+        <div class="col-lg-6 offset-sm-3">
+          <br/><br/>
+          <h2><strong>SECret <span id="mfk">motherfucking</span> Santa</strong></h2>
+          <br/><br/>
+          <br/><br/>
+            <form method="POST" action="/login">
+              <div class="form-group">
+                {{ form.hidden_tag() }}
+                {{ wtf.form_field(form.username) }}
+                {{ wtf.form_field(form.password) }}
+                {{ wtf.form_field(form.remember) }}
+              <button type="submit" class="btn btn-primary">Log me the fuck in</button>
+              </div>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -36,5 +48,17 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+    <script>
+     let mfk = "motherfucking";
+     let censorIndexes = [7,8,9,10,12];
+     setInterval(function(){
+       let mfks = mfk.split("");
+       for(let i=0; i<3; i++){
+         let idx = Math.floor(Math.random() * censorIndexes.length);
+         mfks[censorIndexes[idx]] = ["*","@","$","%","#"][idx];
+       }
+       document.querySelector("#mfk").innerText = mfks.join("");
+     }, 100);
+    </script>
   </body>
 </html>
