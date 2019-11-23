@@ -18,3 +18,8 @@ class PairForm(FlaskForm):
 class ProfileEditForm(FlaskForm):
     hint = TextAreaField(validators=[InputRequired()])
     address = TextAreaField(validators=[InputRequired()])
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('password', validators=[InputRequired(), Length(min=8, max=80)])
+    new_password = PasswordField('password', validators=[InputRequired(), Length(min=8, max=80)])
+    new_password_again = PasswordField('password', validators=[InputRequired(), Length(min=8, max=80)])

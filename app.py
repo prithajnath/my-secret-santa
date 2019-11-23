@@ -3,7 +3,7 @@ from models import db, User, Participant
 from flask_mail import Mail, Message
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bootstrap import Bootstrap
-from forms import LoginForm, PairForm, ParticipantLoginForm, ProfileEditForm
+from forms import LoginForm, PairForm, ParticipantLoginForm, ProfileEditForm, ChangePasswordForm
 from random import choice
 
 import os
@@ -54,6 +54,20 @@ def send_email(sender, subject,recipients, template, data):
     return sent
 
 # Routes
+@app.route("/change_password", methods=['GET','POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if current_user.verify_hash(form.current_password.data, current_user.password):
+            current_user.set_password(form.new_password.data)
+            current_user.save_to_db(db)
+
+            return redirect("/profile")
+    return render_template("change_password.html", form=form)
+
+
+
 @app.route("/edit_profile", methods=['GET','POST'])
 @login_required
 def edit_profile():
