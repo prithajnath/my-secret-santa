@@ -1,4 +1,5 @@
 <!doctype html>
+{% import "bootstrap/wtf.html" as wtf %}
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -26,7 +27,11 @@
   <body>
     <div class="container">
       <div class="row">
-        <div class="col-md-6 offset-md-3">
+        <div class="col-sm-2">
+          <br/><br/>
+          <img src="https://media.giphy.com/media/hFIq9i5y2H10Q/giphy.gif"/>
+        </div>
+        <div class="col-md-6 offset-md-4">
 
           <br/></br>
           <a href="/login">Sign me the fuck in (already have an account)</a>
@@ -37,23 +42,16 @@
               {{ message }}
             </div>
           {% endif %}
-          <form method="post" action="/register">
-            <label for="first_name">First Name : </label>
-            <input type="text" name="first_name" class="form-control" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="Stupid">
-            <br/>
-            <label for="last_name">Last Name : </label>
-            <input type="text" name="last_name" class="form-control" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="Alex">
-            <br/>
-            <label for="email">Email : </label>
-            <input type="text" name="email" class="form-control" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="stupidalex@plattsburgh.edu">
-            <br/>
-            <label for="hint">Hint : </label>
-            <textarea placeholder="Hint for your SECret Santa" name="hint"></textarea>
-            <br/><br/>
-            <label form="address">Address : </label>
-            <textarea placeholder="Your shipping address so they can come murder you" name="address"></textarea>
-            <br/><br/>
-            <button type="submit" class="btn btn-primary">Sign me the fuck up</button>
+            <form method="POST" action="/register">
+              <div class="form-group">
+                {{ form.hidden_tag() }}
+                {{ wtf.form_field(form.username) }}
+                {{ wtf.form_field(form.email) }}
+                {{ wtf.form_field(form.first_name) }}
+                {{ wtf.form_field(form.last_name) }}
+                {{ wtf.form_field(form.password) }}
+              <button type="submit" class="btn btn-primary">Sign me the fuck up</button>
+              </div>
           </form>
           <br/><br/><br/><br/>
 
