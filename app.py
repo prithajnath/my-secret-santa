@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, redirect, jsonify
-from models import db, User, Participant
+from models import db, User 
 from flask_mail import Mail, Message
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bootstrap import Bootstrap
-from forms import LoginForm, PairForm, ParticipantLoginForm, ProfileEditForm, ChangePasswordForm
+from forms import SignUpForm, LoginForm, PairForm, ParticipantLoginForm, ProfileEditForm, ChangePasswordForm
 from random import choice
 
 import os
@@ -97,7 +97,7 @@ def create_pairs():
     if form.validate_on_submit():
         from random import shuffle
         admin_message = form.message.data
-        participants_og = [i for i in Participant.query.all()]
+        participants_og = [i for i in User.query.all()]
         participants_clone = [j for j in participants_og]
 
         def validate_shuffle(a,b):
@@ -152,64 +152,34 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return render_template('index.html')
+    form=LoginForm()
+    return render_template('login.html', form=form)
 
 
 @app.route("/register", methods=['POST'])
 def register():
-
-    first_name = request.form['first_name']
-    last_name = request.form['last_name']
-    email = request.form['email']
-    hint = request.form['hint']
-    address = request.form['address']
-
-    participant = Participant.query.filter_by(email=email).first()
-    if participant:
-        return render_template("index.html", message="You already registered you dumb fuck")
-
-    giphy = r.get(f"https://api.giphy.com/v1/gifs/search?q=santa&api_key={GIPHY_API_KEY}")
-    gifs = json.loads(giphy.content)['data']
-    santa_gif_url = choice(gifs)['images']['downsized_medium']['url']
-
-    # try:
-    new_participant = Participant(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        hint=hint,
-        address=address
-    )
-
-    new_participant.save_to_db(db)
-
-    if os.environ.get("ENVIRONMENT") != 'test':
-
-        if send_email('platts.sec@gmail.com','SECret Confirmation',[email], "confirmation.html", {"first_name":first_name, "address":address}):
-            return render_template(
-                "success.html",
-                data={
-                        "first_name":first_name,
-                        "last_name":last_name,
-                        "gif":santa_gif_url
-                    }
-                )
-        return render_template("index.html", message="Are you sure that was a valid email? :/")
-    else:
-        return render_template(
-            "success.html",
-            data={
-                    "first_name":first_name,
-                    "last_name":last_name,
-                    "gif":santa_gif_url
-                }
+    form = SignUpForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if not user:
+            user = User(
+                username=form.username.data,
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+                password=form.password.data,
+                email=form.email.data
             )
-    # except:
-    #     return render_template("index.html", message="Something went wrong. Please try again :(")
+
+            user.save_to_db(db)
+            login_user(user)
+            return redirect('profile')
+    
+    return render_template("index.html", form=form)
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    form = SignUpForm()
+    return render_template("index.html", form=form)
 
 
 if __name__ == "__main__":
