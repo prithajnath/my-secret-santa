@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  secret-santa-web:
+    build: .
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
+      - MAIL_USERNAME=dev-username
+      - MAIL_PASSWORD=dev-password
+      - SECRET_KEY=hellosecretkey
+    entrypoint: "./dev-entrypoint.sh"
+  secret-santa-redis:
+    image: redis
+  secret-santa-postgres:
+    image: postgres
+    environment:
+        - POSTGRES_HOST_AUTH_METHOD=trust 
