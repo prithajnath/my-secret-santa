@@ -3,7 +3,10 @@ FROM python:3.8-slim-buster
 RUN apt update
 
 # GCC and other essentials
-RUN apt install -y libpq-dev build-essential
+RUN apt install -y libpq-dev \
+    build-essential \
+    gnupg2 \
+    procps
 
 # Networking tools
 RUN apt install -y \
@@ -24,6 +27,8 @@ WORKDIR /usr/bin/secretsanta
 COPY . .
 
 RUN pip install -r requirements.txt
+RUN chmod u+x entrypoint.sh
+RUN chmod u+x dev-entrypoint.sh
 
 EXPOSE 9000
 
