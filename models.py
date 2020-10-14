@@ -6,6 +6,18 @@ from uuid import uuid1
 
 db = SQLAlchemy()
 
+class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
+    __tablename__ = 'groups_and_users'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), primary_key=True)
+    group_admin = db.Column(db.Boolean, default=False)
+    group = db.relationship("Group", backref="_users")
+    user = db.relationship("User", backref="_groups")
+
+    def __str__(self):
+        return f"{self.group} >--< #{self.user}"
+
+    __repr__ = __str__
 
 class User(dbMixin, UserMixin, db.Model):
     __tablename__ = "users"
@@ -16,6 +28,7 @@ class User(dbMixin, UserMixin, db.Model):
     password = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     admin = db.Column(db.Boolean, unique=False, default=False)
+    groups = db.relationship('GroupsAndUsersAssociation', backref='_user')
 
     def __init__(self, username="test",
                  first_name="first_name",
@@ -39,3 +52,19 @@ class User(dbMixin, UserMixin, db.Model):
 
     def __str__(self):
         return self.email
+    
+
+    __repr__ = __str__
+
+
+class Group(dbMixin, UserMixin, db.Model):
+    __tablename__ = "groups"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), unique=True, nullable=False)
+    users = db.relationship('GroupsAndUsersAssociation', backref='_group')
+
+    def __str__(self):
+        return self.name
+
+    __repr__ = __str__
