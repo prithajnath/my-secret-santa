@@ -22,7 +22,7 @@ class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
 class User(dbMixin, UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
+    username = db.Column(db.String(20), nullable=False)
     first_name = db.Column(db.String(20), unique=False, nullable=True)
     last_name = db.Column(db.String(20), unique=False, nullable=True)
     password = db.Column(db.String(100), nullable=False)
@@ -61,10 +61,25 @@ class Group(dbMixin, UserMixin, db.Model):
     __tablename__ = "groups"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(20), unique=True, nullable=False)
+    name = db.Column(db.String(200), unique=True, nullable=False)
     users = db.relationship('GroupsAndUsersAssociation', backref='_group')
+
+    def __init__(self, name):
+        self.name = name
 
     def __str__(self):
         return self.name
 
     __repr__ = __str__
+
+class Pair(dbMixin, UserMixin, db.Model):
+    __tablename__ = "pairs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.Date)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'))
+    giver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    group = db.relationship('Group', backref='pairs')
+    giver = db.relationship('User', foreign_keys=[giver_id])
+    receiver = db.relationship('User', foreign_keys=[receiver_id])

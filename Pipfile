@@ -18,6 +18,8 @@ flask-bootstrap = "*"
 wtforms = "*"
 requests = "*"
 gunicorn = "*"
+celery = "*"
+faker = "*"
 
 [dev-packages]
 pylint = "*"
