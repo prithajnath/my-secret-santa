@@ -1,9 +1,22 @@
 from flask import Flask, render_template, request, redirect, jsonify
-from models import db, User 
+from models import db, User
 from flask_mail import Mail, Message
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_login import (
+    LoginManager,
+    login_user,
+    logout_user,
+    login_required,
+    current_user,
+)
 from flask_bootstrap import Bootstrap
-from forms import SignUpForm, LoginForm, PairForm, ParticipantLoginForm, ProfileEditForm, ChangePasswordForm
+from forms import (
+    SignUpForm,
+    LoginForm,
+    PairForm,
+    ParticipantLoginForm,
+    ProfileEditForm,
+    ChangePasswordForm,
+)
 from random import choice
 
 import os
@@ -11,23 +24,25 @@ import admin
 import requests as r
 import json
 
-GIPHY_API_KEY = os.environ.get('GIPHY_API_KEY')
+GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY")
 
 app = Flask(__name__)
-app.config.update(dict(
-# email server
-    DEBUG = True,
-    MAIL_SERVER = 'smtp.gmail.com',
-    MAIL_PORT = 587,
-    MAIL_USE_TLS = True,
-    MAIL_USE_SSL = False,
-    MAIL_USERNAME = f"{os.environ.get('MAIL_USERNAME')}@gmail.com",
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD'),
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL'),
-    SQLALCHEMY_TRACK_MODIFICATIONS = True,
-    SECRET_KEY = os.environ.get('SECRET_KEY'),
-    CSRF_ENABLED = True
-))
+app.config.update(
+    dict(
+        # email server
+        DEBUG=True,
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_PORT=587,
+        MAIL_USE_TLS=True,
+        MAIL_USE_SSL=False,
+        MAIL_USERNAME=f"{os.environ.get('MAIL_USERNAME')}@gmail.com",
+        MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
+        SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL"),
+        SQLALCHEMY_TRACK_MODIFICATIONS=True,
+        SECRET_KEY=os.environ.get("SECRET_KEY"),
+        CSRF_ENABLED=True,
+    )
+)
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
 Bootstrap(app)
 db.init_app(app)
@@ -36,12 +51,13 @@ admin.register(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
 
 
-def send_email(sender, subject,recipients, template, data):
+def send_email(sender, subject, recipients, template, data):
     msg = Message(subject, sender=sender, recipients=recipients)
     msg.html = render_template(template, data=data)
 
@@ -53,8 +69,9 @@ def send_email(sender, subject,recipients, template, data):
             sent = False
     return sent
 
+
 # Routes
-@app.route("/change_password", methods=['GET','POST'])
+@app.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():
     form = ChangePasswordForm()
@@ -67,8 +84,7 @@ def change_password():
     return render_template("change_password.html", form=form)
 
 
-
-@app.route("/edit_profile", methods=['GET','POST'])
+@app.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
     form = ProfileEditForm()
@@ -85,24 +101,27 @@ def edit_profile():
     address = current_user.participant.address
     return render_template("edit_profile.html", form=form, hint=hint, address=address)
 
-@app.route("/profile", methods=['GET','POST'])
+
+@app.route("/profile", methods=["GET", "POST"])
 @login_required
 def participants_profile():
     return render_template("profile.html")
 
-@app.route("/santa", methods=['GET','POST'])
+
+@app.route("/santa", methods=["GET", "POST"])
 @login_required
 def create_pairs():
     form = PairForm()
     if form.validate_on_submit():
         from random import shuffle
+
         admin_message = form.message.data
         participants_og = [i for i in User.query.all()]
         participants_clone = [j for j in participants_og]
 
-        def validate_shuffle(a,b):
-            '''This is to make sure no one is their own SECret Santa'''
-            correct_shuffle=True
+        def validate_shuffle(a, b):
+            """This is to make sure no one is their own SECret Santa"""
+            correct_shuffle = True
             for n in range(len(a)):
                 if a[n] == b[n]:
                     correct_shuffle = False
@@ -118,23 +137,26 @@ def create_pairs():
         pairs = zip(participants_og, participants_clone)
         for x, y in pairs:
             send_email(
-                'platts.sec@gmail.com',
-                'SECret Santa!!!',
+                "platts.sec@gmail.com",
+                "SECret Santa!!!",
                 [x.email],
                 "pair.html",
-                    {
-                        "santa":x.first_name,
-                        "person":f"{y.first_name} {y.last_name}",
-                        "hint":y.hint,
-                        "address":y.address,
-                        "admin":admin_message
-                    }
-                )
-        return render_template("santa.html", form=form, message="Pairs successfully created")
+                {
+                    "santa": x.first_name,
+                    "person": f"{y.first_name} {y.last_name}",
+                    "hint": y.hint,
+                    "address": y.address,
+                    "admin": admin_message,
+                },
+            )
+        return render_template(
+            "santa.html", form=form, message="Pairs successfully created"
+        )
 
     return render_template("santa.html", form=form)
 
-@app.route("/login", methods=['GET', 'POST'])
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
@@ -142,21 +164,22 @@ def login():
         if user.verify_hash(form.password.data, user.password):
             login_user(user)
             if user.admin:
-                return redirect('/admin')
+                return redirect("/admin")
             else:
-                return redirect('/profile')
+                return redirect("/profile")
 
-    return render_template('login.html', form=form)
+    return render_template("login.html", form=form)
 
-@app.route("/logout", methods=['GET', 'POST'])
+
+@app.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
     logout_user()
-    form=LoginForm()
-    return render_template('login.html', form=form)
+    form = LoginForm()
+    return render_template("login.html", form=form)
 
 
-@app.route("/register", methods=['POST'])
+@app.route("/register", methods=["POST"])
 def register():
     form = SignUpForm()
     if form.validate_on_submit():
@@ -167,14 +190,15 @@ def register():
                 first_name=form.first_name.data,
                 last_name=form.last_name.data,
                 password=form.password.data,
-                email=form.email.data
+                email=form.email.data,
             )
 
             user.save_to_db(db)
             login_user(user)
-            return redirect('profile')
-    
+            return redirect("profile")
+
     return render_template("index.html", form=form)
+
 
 @app.route("/")
 def index():
