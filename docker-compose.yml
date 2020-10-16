@@ -10,6 +10,7 @@ services:
       - MAIL_USERNAME=dev-username
       - MAIL_PASSWORD=dev-password
       - SECRET_KEY=hellosecretkey
+      - ENV=development
     entrypoint: "./dev-entrypoint.sh"
   secret-santa-redis:
     image: redis
