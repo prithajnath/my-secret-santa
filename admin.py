@@ -4,6 +4,7 @@ from models import User, Group, GroupsAndUsersAssociation, Pair
 from flask_login import current_user
 from flask import redirect
 
+
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.admin

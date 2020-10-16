@@ -7,6 +7,7 @@ from os import environ
 from random import choices
 from uuid import uuid4
 
+
 class CreateSuperUser(Command):
     def run(self):
         username = input("Enter superuser user name : ")
@@ -14,18 +15,16 @@ class CreateSuperUser(Command):
         password = getpass("Enter superuser password : ")
 
         new_superuser = User(
-            username=username,
-            email=email,
-            password=password,
-            admin=True
+            username=username, email=email, password=password, admin=True
         )
 
         new_superuser.save_to_db(db)
         print(f"superuser {username} : {email} created successfully")
 
+
 class SeedDatabase(Command):
     def run(self):
-        if environ.get('ENV') != 'production':
+        if environ.get("ENV") != "production":
             fake = Faker()
 
             users = [(fake.first_name(), fake.last_name()) for _ in range(1000)]
@@ -39,7 +38,7 @@ class SeedDatabase(Command):
                     first_name=first_name,
                     last_name=last_name,
                     email=email,
-                    password='helloworld'       
+                    password="helloworld",
                 )
 
                 random_user.save_to_db(db)
@@ -52,9 +51,11 @@ class SeedDatabase(Command):
                 group = Group(name=group_name)
                 for member in members:
                     if (member.id, group.id) not in distinct:
-                        group_assoc = GroupsAndUsersAssociation(user=member, group=group)
+                        group_assoc = GroupsAndUsersAssociation(
+                            user=member, group=group
+                        )
                         group_assoc.save_to_db(db)
                         distinct.add((member.id, group.id))
-            
+
         else:
             print("Can't run this command in production")
