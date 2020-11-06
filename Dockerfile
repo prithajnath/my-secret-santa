@@ -18,6 +18,7 @@ RUN apt install -y \
 	netcat-openbsd \
 	jq \
 	postgresql-client \
+	redis \
 	nmap \
 	net-tools \
     	&& rm -rf /var/lib/apt/lists/*
@@ -29,6 +30,7 @@ COPY . .
 RUN pip install -r requirements.txt
 RUN chmod u+x entrypoint.sh
 RUN chmod u+x dev-entrypoint.sh
+RUN chmod u+x celery-init.sh
 
 EXPOSE 9000
 
