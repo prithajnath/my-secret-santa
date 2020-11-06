@@ -2,6 +2,8 @@ version: "3.8"
 services:
   secret-santa-web:
     build: .
+    volumes:
+      - .:/usr/bin/secretsanta
     ports:
       - "9000:9000"
     environment:
@@ -11,7 +13,20 @@ services:
       - MAIL_PASSWORD=dev-password
       - SECRET_KEY=hellosecretkey
       - ENV=development
+      - CELERY_BROKER_URL=redis://secret-santa-redis
+      - CELERY_RESULT_BACKEND=redis://secret-santa-redis
     entrypoint: "./dev-entrypoint.sh"
+  secret-santa-celery-service:
+    build: .
+    user: "${UID}:${GID}"
+    volumes:
+      - .:/usr/bin/secretsanta
+    environment:
+      - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
+      - ENV=development
+      - CELERY_BROKER_URL=redis://secret-santa-redis
+      - CELERY_RESULT_BACKEND=redis://secret-santa-redis
+    entrypoint: "./celery-init.sh"
   secret-santa-redis:
     image: redis
   secret-santa-postgres:

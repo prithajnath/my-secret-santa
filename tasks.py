@@ -3,17 +3,20 @@ from celery import Celery
 from time import time
 from requests import get
 from datetime import datetime
-from models import Pair
+from models import Pair, Group
+from app import app, db
 
 
-class TaskRunner:
-    def __init__(self, name, config):
-        self.celery = Celery(name, broker=config.fetch("CELERY_BROKER_URL"))
+celery = Celery('tasks', broker=os.environ.get("CELERY_BROKER_URL"))
 
-    @self.celery.task
-    def make_pairs(self, users, group):
+
+@celery.task()
+def make_pairs(group_id):
+    with app.app_context():
+        group = Group.query.filter_by(id=group_id).first()
         weighted_set = []
-        for user in users:
+        for user_association in group.users:
+            user = user_association.user
             epoch = int(time())
             random_number = int(
                 get(
@@ -26,10 +29,16 @@ class TaskRunner:
 
         pairs = [user for user, _ in sorted(weighted_set, key=lambda k: k[1])]
 
+        pair_timestamp = datetime.now()
+        final_pairs = []
         for index, giver in enumerate(pairs):
             receiver = pairs[(index + 1) % len(pairs)]
             new_pair = Pair(
-                group=group, receiver=receiver, giver=giver, timestamp=datetime.now()
+                group=group, receiver=receiver, giver=giver, timestamp=pair_timestamp
             )
 
             new_pair.save_to_db(db)
+
+            final_pairs.append((giver.username, receiver.username))
+
+        return final_pairs

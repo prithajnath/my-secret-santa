@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify
 from models import db, User
+from serializers import ma
 from flask_mail import Mail, Message
 from flask_login import (
     LoginManager,
@@ -18,6 +19,8 @@ from forms import (
     ChangePasswordForm,
 )
 from random import choice
+from kombu.serialization import register
+from serializers import UserSchema, GroupSchema
 
 import os
 import admin
@@ -26,11 +29,12 @@ import json
 
 GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY")
 
+
+
 app = Flask(__name__)
 app.config.update(
     dict(
-        # email server
-        DEBUG=True,
+        DEBUG=False if os.environ.get('ENV') == 'production' else True,
         MAIL_SERVER="smtp.gmail.com",
         MAIL_PORT=587,
         MAIL_USE_TLS=True,
@@ -41,11 +45,15 @@ app.config.update(
         SQLALCHEMY_TRACK_MODIFICATIONS=True,
         SECRET_KEY=os.environ.get("SECRET_KEY"),
         CSRF_ENABLED=True,
+        CELERY_BROKER_URL=os.environ.get('CELERY_BROKER_URL'),
+        CELERY_TASK_SERIALIZER='sqlaclh_json',
+        CELERY_RESULT_BACKEND=os.environ.get('CELERY_RESULT_BACKEND')
     )
 )
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+
 Bootstrap(app)
 db.init_app(app)
+ma.init_app(app)
 mail = Mail(app)
 admin.register(app, db)
 login_manager = LoginManager()

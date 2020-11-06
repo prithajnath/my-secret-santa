@@ -20,6 +20,9 @@ requests = "*"
 gunicorn = "*"
 celery = "*"
 faker = "*"
+redis = "*"
+marshmallow-sqlalchemy = "*"
+flask-marshmallow = "*"
 
 [dev-packages]
 pylint = "*"
