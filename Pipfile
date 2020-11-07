@@ -23,6 +23,7 @@ faker = "*"
 redis = "*"
 marshmallow-sqlalchemy = "*"
 flask-marshmallow = "*"
+aiohttp = "*"
 
 [dev-packages]
 pylint = "*"
