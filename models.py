@@ -12,6 +12,7 @@ class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), primary_key=True)
     group_admin = db.Column(db.Boolean, default=False)
+    participating = db.Column(db.Boolean, default=True)
     group = db.relationship("Group", backref="_users")
     user = db.relationship("User", backref="_groups")
 
@@ -81,6 +82,7 @@ class Pair(dbMixin, UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.Date)
+    emailed = db.Column(db.Boolean, default=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
     giver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
