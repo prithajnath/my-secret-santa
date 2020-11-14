@@ -27,12 +27,12 @@
             {{ message }}
           </div>
         {% endif %}
-        <form method="POST" action="/santa">
+        <form method="POST" action="/santa?group_id="{{ group_id }}>
             <div class="form-group">
               {{ form.hidden_tag() }}
               {{ wtf.form_field(form.message) }}
             <button type="submit" class="btn btn-warning">Boom</button>
-      </form>
+        </form>
       </div>
     </div>
 
