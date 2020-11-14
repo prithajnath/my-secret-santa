@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, jsonify
-from models import db, User
+from models import db, Group, User
 from serializers import ma
+from celery import Celery
 from flask_mail import Mail, Message
 from flask_login import (
     LoginManager,
@@ -30,11 +31,10 @@ import json
 GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY")
 
 
-
 app = Flask(__name__)
 app.config.update(
     dict(
-        DEBUG=False if os.environ.get('ENV') == 'production' else True,
+        DEBUG=False if os.environ.get("ENV") == "production" else True,
         MAIL_SERVER="smtp.gmail.com",
         MAIL_PORT=587,
         MAIL_USE_TLS=True,
@@ -45,9 +45,6 @@ app.config.update(
         SQLALCHEMY_TRACK_MODIFICATIONS=True,
         SECRET_KEY=os.environ.get("SECRET_KEY"),
         CSRF_ENABLED=True,
-        CELERY_BROKER_URL=os.environ.get('CELERY_BROKER_URL'),
-        CELERY_TASK_SERIALIZER='sqlaclh_json',
-        CELERY_RESULT_BACKEND=os.environ.get('CELERY_RESULT_BACKEND')
     )
 )
 
@@ -58,6 +55,9 @@ mail = Mail(app)
 admin.register(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
 
 @login_manager.user_loader
@@ -118,50 +118,28 @@ def participants_profile():
 
 @app.route("/santa", methods=["GET", "POST"])
 @login_required
-def create_pairs():
+def santa():
     form = PairForm()
-    if form.validate_on_submit():
-        from random import shuffle
+    if request.method == "POST":
+        group_id = request.args.get("group_id")
+        task = celery.send_task("pair.create", (group_id,))
 
-        admin_message = form.message.data
-        participants_og = [i for i in User.query.all()]
-        participants_clone = [j for j in participants_og]
-
-        def validate_shuffle(a, b):
-            """This is to make sure no one is their own SECret Santa"""
-            correct_shuffle = True
-            for n in range(len(a)):
-                if a[n] == b[n]:
-                    correct_shuffle = False
-                    break
-            return correct_shuffle
-
-        while True:
-            for _ in range(10000):
-                shuffle(participants_clone)
-            if validate_shuffle(participants_og, participants_clone):
-                break
-
-        pairs = zip(participants_og, participants_clone)
-        for x, y in pairs:
-            send_email(
-                "platts.sec@gmail.com",
-                "SECret Santa!!!",
-                [x.email],
-                "pair.html",
-                {
-                    "santa": x.first_name,
-                    "person": f"{y.first_name} {y.last_name}",
-                    "hint": y.hint,
-                    "address": y.address,
-                    "admin": admin_message,
-                },
+        if task.status == "PENDING":
+            message = "Pairs are being created. Should be done soon"
+            return render_template(
+                "santa.html", group_id=group_id, form=form, message=message
             )
-        return render_template(
-            "santa.html", form=form, message="Pairs successfully created"
-        )
 
     return render_template("santa.html", form=form)
+
+
+@app.route("/group", methods=["GET"])
+@login_required
+def group():
+    group_id = request.args.get("group_id")
+    group = Group.filter_by(id=group_id).first()
+    if group.is_admin(current_user):
+        return render_template("group.html", group=group)
 
 
 @app.route("/login", methods=["GET", "POST"])

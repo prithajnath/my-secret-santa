@@ -1,14 +1,20 @@
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy, event
 from passlib.hash import pbkdf2_sha256
 from mixins import dbMixin
 from flask_login import UserMixin
-from uuid import uuid1
+from sqlalchemy.dialects.postgresql import UUID
+from uuid import uuid1, uuid4
+from sql.materialized_views import AllAdminView
 
 db = SQLAlchemy()
 
 
+all_admin_materialized_view = AllAdminView(db)
+
+
 class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
     __tablename__ = "groups_and_users"
+
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), primary_key=True)
     group_admin = db.Column(db.Boolean, default=False)
@@ -18,6 +24,10 @@ class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
 
     def __str__(self):
         return f"{self.group} >--< #{self.user}"
+
+    def is_admin(self, user):
+        admin_user = [i for i in self.users if i.group_admin][0]
+        admn_user.user.id == user.id
 
     __repr__ = __str__
 
@@ -89,3 +99,13 @@ class Pair(dbMixin, UserMixin, db.Model):
     group = db.relationship("Group", backref="pairs")
     giver = db.relationship("User", foreign_keys=[giver_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
+
+
+@event.listens_for(Group, "before_insert", once=True)
+def create_group_admin_materialized_view(mapper, connection, target):
+    all_admin_materialized_view.create()
+
+
+@event.listens_for(Group, "after_insert")
+def refresh_group_admin_materialized_view(mapper, connection, target):
+    all_admin_materialized_view.refresh()
