@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE MATERIALIZED VIEW all_admin_view AS(
     WITH admins AS(
         SELECT
@@ -7,6 +8,7 @@ CREATE MATERIALIZED VIEW all_admin_view AS(
         WHERE
             group_admin = 't'
     ) SELECT
+        uuid_generate_v4() as id,
         user_id,
         username,
         group_id,
@@ -22,3 +24,5 @@ CREATE MATERIALIZED VIEW all_admin_view AS(
     ON
         groups.id = admins.group_id
 );
+
+CREATE UNIQUE INDEX ON all_admin_view (id);

@@ -25,10 +25,6 @@ class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
     def __str__(self):
         return f"{self.group} >--< #{self.user}"
 
-    def is_admin(self, user):
-        admin_user = [i for i in self.users if i.group_admin][0]
-        admn_user.user.id == user.id
-
     __repr__ = __str__
 
 
@@ -84,6 +80,12 @@ class Group(dbMixin, UserMixin, db.Model):
     def __str__(self):
         return self.name
 
+    def is_admin(self, user):
+        admin_of = all_admin_materialized_view.query.filter_by(user_id=user.id, group_id=self.id)
+        if admin_of.first():
+            return True 
+        return False
+
     __repr__ = __str__
 
 
@@ -101,11 +103,11 @@ class Pair(dbMixin, UserMixin, db.Model):
     receiver = db.relationship("User", foreign_keys=[receiver_id])
 
 
-@event.listens_for(Group, "before_insert", once=True)
+@event.listens_for(GroupsAndUsersAssociation, "before_insert", once=True)
 def create_group_admin_materialized_view(mapper, connection, target):
     all_admin_materialized_view.create()
 
 
-@event.listens_for(Group, "after_insert")
+@event.listens_for(GroupsAndUsersAssociation, "after_insert")
 def refresh_group_admin_materialized_view(mapper, connection, target):
     all_admin_materialized_view.refresh()

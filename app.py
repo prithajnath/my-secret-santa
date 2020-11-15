@@ -137,7 +137,7 @@ def santa():
 @login_required
 def group():
     group_id = request.args.get("group_id")
-    group = Group.filter_by(id=group_id).first()
+    group = Group.query.filter_by(id=group_id).first()
     if group.is_admin(current_user):
         return render_template("group.html", group=group)
 
