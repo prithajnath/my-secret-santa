@@ -1,3 +1,5 @@
+from sqlalchemy.exc import ProgrammingError
+
 class MaterializedView:
     def __init__(self, name, conn, ddl):
         self.name = name
@@ -5,12 +7,11 @@ class MaterializedView:
         self.ddl = ddl
 
     def create(self):
-        result = self.conn.engine.execute(
-            f"SELECT * FROM pg_tables WHERE tablename='{self.name}';"
-        )
-
-        if not result.fetchall():
+        try:
             self.conn.engine.execute(self.ddl)
+        except ProgrammingError as e:
+            if 'relation "all_admin_view" already exists' in e.__str__():
+                print(f"Materialized view {self.name} already exists. Skipping creation")
 
     def refresh(self):
         self.conn.engine.execute(f"REFRESH MATERIALIZED VIEW {self.name}")
