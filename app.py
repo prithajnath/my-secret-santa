@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, jsonify
-from models import db, Group, User
+from models import db, Group, User, GroupsAndUsersAssociation
 from serializers import ma
 from celery import Celery
 from flask_mail import Mail, Message
@@ -15,8 +15,9 @@ from forms import (
     SignUpForm,
     LoginForm,
     PairForm,
-    ParticipantLoginForm,
     ProfileEditForm,
+    InviteUserToGroupForm,
+    CreateGroupForm,
     ChangePasswordForm,
 )
 from random import choice
@@ -99,14 +100,14 @@ def edit_profile():
     if form.validate_on_submit():
         hint = form.hint.data
         address = form.address.data
-        current_user.participant.hint = hint
-        current_user.participant.address = address
+        current_user.hint = hint
+        current_user.address = address
 
-        current_user.participant.save_to_db(db)
+        current_user.save_to_db(db)
 
         return redirect("/profile")
-    hint = current_user.participant.hint
-    address = current_user.participant.address
+    hint = current_user.hint
+    address = current_user.address
     return render_template("edit_profile.html", form=form, hint=hint, address=address)
 
 
@@ -133,17 +134,50 @@ def santa():
     return render_template("santa.html", form=form)
 
 
-@app.route("/group", methods=["GET"])
+@app.route("/groups", methods=["GET", "POST"])
 @login_required
 def group():
+    create_group_form = CreateGroupForm()
+    invite_user_to_group_form = InviteUserToGroupForm()
+    if request.method == "POST":
+        if create_group_form.validate_on_submit():
+            new_group = Group(name=create_group_form.name.data)
+            new_group.save_to_db(db)
+            new_group_assoc = GroupsAndUsersAssociation(group=new_group, user=current_user, group_admin=True)
+            new_group_assoc.save_to_db(db)
+
+            db.session.commit()
+            return render_template("group.html", group=new_group, form=invite_user_to_group_form)
+        
+        if invite_user_to_group_form.validate_on_submit():
+            group_id = request.args.get("group_id")
+            group = Group.query.filter_by(id=group_id).first()
+            user = User.query.filter_by(email=invite_user_to_group_form.email.data).first()
+            new_group_assoc = GroupsAndUsersAssociation(group=group, user=user)
+            new_group_assoc.save_to_db(db)
+
+            return render_template("group.html", group=group, form=invite_user_to_group_form)
     group_id = request.args.get("group_id")
-    group = Group.query.filter_by(id=group_id).first()
-    if group.is_admin(current_user):
-        return render_template("group.html", group=group)
+    if group_id:
+        group = Group.query.filter_by(id=group_id).first()
+        if group.is_admin(current_user):
+            return render_template("group.html", group=group, form=invite_user_to_group_form)
+    groups = [i.group for i in current_user.groups]
+    return render_template("my_groups.html", groups=groups, form=create_group_form)
+
+
+@app.route("/my_groups", methods=["GET"])
+@login_required
+def my_groups():
+    form = CreateGroupForm()
+    groups = [i.group for i in current_user.groups]
+    return render_template("my_groups.html", groups=groups, form=form)
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user.is_authenticated:
+        return redirect("/profile")
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()

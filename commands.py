@@ -39,6 +39,8 @@ class SeedDatabase(Command):
                     last_name=last_name,
                     email=email,
                     password="helloworld",
+                    address=fake.address(),
+                    hint=" ".join(fake.words(50)),
                 )
 
                 random_user.save_to_db(db)

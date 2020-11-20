@@ -34,6 +34,8 @@ class User(dbMixin, UserMixin, db.Model):
     username = db.Column(db.String(20), nullable=False)
     first_name = db.Column(db.String(20), unique=False, nullable=True)
     last_name = db.Column(db.String(20), unique=False, nullable=True)
+    hint = db.Column(db.String(2000), unique=False, nullable=True)
+    address = db.Column(db.String(200), unique=False, nullable=True)
     password = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     admin = db.Column(db.Boolean, unique=False, default=False)
@@ -46,6 +48,8 @@ class User(dbMixin, UserMixin, db.Model):
         last_name="last_name",
         email="test@test.io",
         password="test",
+        hint="somehint",
+        address="whereilive",
         admin=False,
     ):
         self.username = username
@@ -53,6 +57,8 @@ class User(dbMixin, UserMixin, db.Model):
         self.last_name = last_name
         self.email = email
         self.admin = admin
+        self.address = address
+        self.hint = hint
         self.password = pbkdf2_sha256.hash(password)
 
     def verify_hash(self, password, hash):
@@ -81,9 +87,11 @@ class Group(dbMixin, UserMixin, db.Model):
         return self.name
 
     def is_admin(self, user):
-        admin_of = all_admin_materialized_view.query.filter_by(user_id=user.id, group_id=self.id)
+        admin_of = all_admin_materialized_view.query.filter_by(
+            user_id=user.id, group_id=self.id
+        )
         if admin_of.first():
-            return True 
+            return True
         return False
 
     __repr__ = __str__

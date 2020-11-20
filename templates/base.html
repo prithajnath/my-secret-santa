@@ -1,7 +1,4 @@
-
-{% extends 'base.html' %}
 <!doctype html>
-{% import "bootstrap/wtf.html" as wtf %}
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -17,16 +14,6 @@
         width: 1250px;
         height: 500px;
       }
-
-      #hint{
-        width: 500px;
-        height: 200px;
-      }
-
-      #address{
-        width: 500px;
-        height: 200px;
-      }
       </style>
     <title>SECret m-fking Santa</title>
   </head>
@@ -36,36 +23,39 @@
   }
   </style>
   <body>
-  {% block content %}
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-2">
-          <br/><br/>
-          <img src="https://api.adorable.io/avatars/285/{{ current_user.email }}"/>
+    <nav style="background-color: #e3f2fd;" class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/"><img src="https://res-console.cloudinary.com/dzmp7xptn/thumbnails/transform/v1/image/upload//v1605468679/aHVnZV8xX2Z0d2szYg==/drilldown" style="
+    height: 46px;"></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+            </ul>
+            <div class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                @{{ current_user.username }}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="/profile">My profile</a>
+                <a class="dropdown-item" href="/my_groups">My groups</a>
+                <a class="dropdown-item" href="/change_password">Change password</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/logout">Logout</a>
+            </div>
+            </div>
         </div>
-        <div class="col-sm-2 offset-md-3">
-          <br/><br/>
-            <form method="POST" action="/edit_profile">
-              {{ form.hidden_tag() }}
-              <p>{{ wtf.form_field(form.hint) }}</p>
-              <p>{{ wtf.form_field(form.address) }}</p>
-              <button type="submit" class="btn btn-primary">Save</button>
-            </form>
-        </div>
-    </div>
-    </div>
-    <script>
-      var hint = `{{ current_user.hint|safe }}`;
-      var address = `{{ current_user.address|safe }}`;
-      document.querySelector("#hint").value = hint;
-      document.querySelector("#address").value = address;
-    </script>
-  {% endblock %}
+    </nav>
+
+    {% block content %}{% endblock %}
+
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
 
   </body>
 </html>
