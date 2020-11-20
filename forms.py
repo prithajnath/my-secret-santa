@@ -29,14 +29,6 @@ class LoginForm(FlaskForm):
     remember = BooleanField("remember")
 
 
-class ParticipantLoginForm(FlaskForm):
-    email = StringField("email", validators=[InputRequired(), Length(min=4, max=15)])
-    password = PasswordField(
-        "password", validators=[InputRequired(), Length(min=8, max=80)]
-    )
-    remember = BooleanField("remember")
-
-
 class PairForm(FlaskForm):
     message = TextAreaField("Admin message")
 
@@ -45,6 +37,11 @@ class ProfileEditForm(FlaskForm):
     hint = TextAreaField(validators=[InputRequired()])
     address = TextAreaField(validators=[InputRequired()])
 
+class CreateGroupForm(FlaskForm):
+    name = TextAreaField(validators=[InputRequired()])
+
+class InviteUserToGroupForm(FlaskForm):
+    email = StringField("email", validators=[InputRequired(), Length(min=4, max=100)])
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField(

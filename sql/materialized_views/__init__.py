@@ -16,16 +16,19 @@ class MaterializedView:
             self.conn.engine.execute(self.ddl)
         except ProgrammingError as e:
             if f"relation '{self.name}'already exists" in e.__str__():
-                print(f"Materialized view {self.name} already exists. Skipping creation")
+                print(
+                    f"Materialized view {self.name} already exists. Skipping creation"
+                )
 
     def refresh(self):
         print(f"refreshing materialized view {self.name}")
-        self.conn.engine.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {self.name}")
+        with self.conn.engine.begin() as connection:
+            connection.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {self.name}")
 
     def drop(self):
         self.conn.engine.execute(f"DROP MATERIALIZED VIEW IF EXISTS {self.name}")
 
-    @property    
+    @property
     def query(self):
         return self.conn.session.query(self._view)
 
@@ -35,10 +38,13 @@ class MaterializedView:
             self.name,
             (declarative_base(),),
             {
-                "__table__": Table(self.name, MetaData(bind=self.conn.engine),
-                self.conn.Column('id', UUID(as_uuid=True), primary_key=True),
-                autoload_with=self.conn.engine)
-            }
+                "__table__": Table(
+                    self.name,
+                    MetaData(bind=self.conn.engine),
+                    self.conn.Column("id", UUID(as_uuid=True), primary_key=True),
+                    autoload_with=self.conn.engine,
+                )
+            },
         )
 
 
