@@ -29,6 +29,8 @@ services:
       - ENV=development
       - CELERY_BROKER_URL=redis://secret-santa-redis
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
+      - UID=5000
+      - GID=5000
     entrypoint: "./celery-init.sh"
   secret-santa-redis:
     image: redis

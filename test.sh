@@ -13,10 +13,16 @@ cat << santatext
 santatext
 
 docker-compose up -d
+
+while [ $(docker ps | grep secret-santa | wc -l ) -ne "4" ]; do
+    sleep 5
+done
+
+# Give all the containers some time to initialize after startup
 sleep 10
+
 echo "$(date) : running the secret santa test suite"
 docker exec secret-santa-2018_secret-santa-web_1 pytest -vv
 
 echo "$(date) cleaning up"
-
 docker-compose rm -vfs

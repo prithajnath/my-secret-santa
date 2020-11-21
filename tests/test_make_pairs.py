@@ -105,4 +105,10 @@ def test_all_members_have_been_paired(pairs):
     group = pairs[0].group
     assert len(pairs) == len(group.users)
 
+def test_no_one_is_their_own_secret_santa(pairs):
+
+    for pair in pairs:
+        giver, receiver = pair.giver, pair.receiver
+        assert giver != receiver
+
 
