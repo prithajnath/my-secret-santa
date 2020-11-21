@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Pre-commit hooks 
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# Hook to make sure requirements.txt is always in sync with Pipfile
+[ ! -z "$(diff <(pipenv lock -r) <(cat $(pwd)/requirements.txt))" ] && echo "ABORTING COMMIT :: PLEASE FIX :: requirements.txt needs to be in sync with Pipfile" && exit 1
+
+exit 0
