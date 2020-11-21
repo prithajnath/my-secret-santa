@@ -84,20 +84,21 @@ def group(users):
 
 @pytest.fixture
 def pairs(group):
-    celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
-    task = celery.send_task("pair.create", (group.id,))
+    with app.app_context():
+        celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
+        task = celery.send_task("pair.create", (group.id,))
 
-    while task.status == "PENDING":
-        sleep(5)
-    
-    pairs = [*Pair.query.filter_by(group_id=group.id)]
-    pair_ids = [pair.id for pair in pairs]
+        while task.status == "PENDING":
+            sleep(5)
+        
+        pairs = [*Pair.query.filter_by(group_id=group.id)]
+        pair_ids = [pair.id for pair in pairs]
 
-    yield pairs
+        yield pairs
 
-    for pair_id in pair_ids:
-        pair = Pair.query.filter_by(id=pair_id).first()
-        pair.delete_from_db(db)
+        for pair_id in pair_ids:
+            pair = Pair.query.filter_by(id=pair_id).first()
+            pair.delete_from_db(db)
 
 def test_all_members_have_been_paired(pairs):
 
