@@ -16,6 +16,7 @@ services:
       - ENV=development
       - CELERY_BROKER_URL=redis://secret-santa-redis
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
+      - PYTHONPATH=.
     entrypoint: "./dev-entrypoint.sh"
   secret-santa-celery-service:
     build: .

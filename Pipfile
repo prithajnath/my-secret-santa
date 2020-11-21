@@ -24,6 +24,7 @@ redis = "*"
 marshmallow-sqlalchemy = "*"
 flask-marshmallow = "*"
 aiohttp = "*"
+pytest = "*"
 
 [dev-packages]
 pylint = "*"
