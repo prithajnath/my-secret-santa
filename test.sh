@@ -18,11 +18,18 @@ while [ $(docker ps | grep secret-santa | wc -l ) -ne "4" ]; do
     sleep 5
 done
 
-# Give all the containers some time to initialize after startup
-sleep 10
+container_id=$(docker ps | grep web_1 | awk '{ print $1 }')
+
+# Check if database has been initialized yet (Relations MUST exist)
+echo "$(date) : checking database readiness"
+while true; do
+    db=$(docker exec $container_id psql -h secret-santa-postgres -U postgres --db postgres -c "\\d")
+    [ $? -eq 0 ] && [[ $db =~ "users" ]] && echo $db && break
+    sleep 5
+done
 
 echo "$(date) : running the secret santa test suite"
-docker exec secret-santa-2018_secret-santa-web_1 pytest -vv
+docker exec $container_id pytest -vv
 
 echo "$(date) cleaning up"
 docker-compose rm -vfs

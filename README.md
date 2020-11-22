@@ -13,7 +13,7 @@ You'll need the following in your dev machine to get started
 
 ### Clone and repository and `cd` into it
 ```
-git clone git@github.com:prithajnath/my-secret-santa.git && cd secret-santa-2018
+git clone git@github.com:prithajnath/my-secret-santa.git && cd my-secret-santa
 ```
 ### Create and start a virtual environment
 ```
