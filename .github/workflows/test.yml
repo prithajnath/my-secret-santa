@@ -8,5 +8,5 @@ jobs:
   test_on_push_to_master:
     runs-on: self-hosted
     steps:
-      - users: actions/checkout@v2
+      - uses: actions/checkout@v2
       - run: ./test.sh
