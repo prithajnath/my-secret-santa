@@ -8,10 +8,10 @@ class SignUpForm(FlaskForm):
         "username", validators=[InputRequired(), Length(min=4, max=150)]
     )
     first_name = StringField(
-        "first_name", validators=[InputRequired(), Length(min=2, max=150)]
+        "first name", validators=[InputRequired(), Length(min=2, max=150)]
     )
     last_name = StringField(
-        "last_name", validators=[InputRequired(), Length(min=2, max=150)]
+        "last name", validators=[InputRequired(), Length(min=2, max=150)]
     )
     email = StringField("email", validators=[InputRequired(), Length(min=4, max=100)])
     password = PasswordField(

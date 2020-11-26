@@ -7,42 +7,177 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet">
       <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+      <link rel="preconnect" href="https://fonts.gstatic.com">
+      <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
       <style>
       iframe{
         width: 1250px;
         height: 500px;
       }
       </style>
-    <title>SECret m-fking Santa</title>
+    <title>My Secret Santa</title>
   </head>
   <style>
   body{
     font-family: 'Roboto Mono', monospace;
+    background-color: #fefcfb;
+    background-image: radial-gradient(circle 30px,#bfb2b2 0%, #a2999900 10%);
+    background-position: 0 0, 50px 50px;
+    background-size: 100px 100px;
+    background-attachment: fixed;
   }
+
+  .santa-button{
+    background-color: #fefcfb;
+    border-color: black;
+    border-style: solid;
+    padding: 5px 15px 5px 15px;
+    font-size: larger;
+    font-weight: bolder;
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    transition: all 0.4s;
+  }
+
+  .santa-button:hover{
+    cursor: pointer;
+    background-color: #08083a;
+    color: #fefcfb;
+    position: fixed;
+    z-index: -2;
+    display: inline block;
+  }
+
+  
+  .drop {
+    background: #fefcfb;
+    z-index: -1;
+    width: 6px;
+    height: 9px;
+    border-radius: 15px;
+    right: 210px;
+    animation: fall 2s ease-in 0s infinite;
+    animation-fill-mode: both;
+    position: absolute;
+  }
+.drop:nth-child(even) {
+    top: 10px;
+    left: -12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 40px;
+    animation-delay: 0.5s !important;
+}
+.drop:nth-child(3n - 1) {
+    top: 0px;
+    left: 20px;
+    left-animation-delay: 1s !important;
+}
+.drop:nth-child(3n + 1) {
+    left: 0px;
+    top: -10px;
+    animation-delay: 2s !important;
+}
+.drop:nth-child(4n - 1) {
+    left: 110px;
+    top: -30px;
+    animation-delay: 1.5s !important;
+}
+.drop:nth-child(4n + 1) {
+    left: 45px;
+    top: 15px;
+    animation-delay: 1s !important;
+}
+.drop:nth-child(5n - 1) {
+    left: 95px;
+    top: -40px;
+}
+.drop:nth-child(-5n + 1) {
+    left: 65px;
+    top: 10px;
+    animation-delay: 1.25s !important;
+}
+.drop:nth-child(6n + 1) {
+    left: 37px;
+    top: -65px;
+    animation-delay: 1s !important;
+}
+
+  h2{
+    font-family: 'Rubik Mono One', sans-serif;
+  }
+
+  @keyframes fall {
+    0% {
+      margin-top: 500px;
+      opacity: 0.6;
+    }
+
+    60% {
+      opacity: 0.8;
+      margin-left: 45px;
+    }
+    100% {
+      margin-top: 900px;
+      opacity: 1;
+    }
+  }
+
+
+  .form-control {
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    padding: 3px 0px 3px 3px;
+    margin: 5px 1px 3px 0px;
+    border: 2px solid black;
+    border-radius: 0px;
+    resize: none;
+    background-color: #fefcfb;
+    width: 100%;
+  }   
+
   </style>
   <body>
-    <div class="container">
+    <div class="container" style="z-index: 3;">
       <div class="row">
-        <div class="col-sm-2">
+        <div class="col">
           <br/><br/>
-          <img src="https://media.giphy.com/media/hFIq9i5y2H10Q/giphy.gif"/>
+          <img src="https://media.giphy.com/media/ju0klUboMNJGdMSwW9/giphy.gif"/>
         </div>
-        <div class="col-md-6 offset-md-4">
-
+          
+        <div class="col">
+          <br/></br>
+          <h2><strong>My Secret <span id="mfk">motherfucking</span> Santa</strong></h2>
           <br/></br>
           <a href="/login">Sign me the fuck in (already have an account)</a>
           <br/></br>
-          <h1>Register for SECret Santa</h1>
           {% if message %}
             <div class="alert alert-danger" style="opacity:0.8;">
               {{ message }}
             </div>
           {% endif %}
             <form method="POST" action="/register">
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
+              <div class="drop"></div>
               <div class="form-group">
                 {{ form.hidden_tag() }}
                 {{ wtf.form_field(form.username) }}
@@ -50,21 +185,38 @@
                 {{ wtf.form_field(form.first_name) }}
                 {{ wtf.form_field(form.last_name) }}
                 {{ wtf.form_field(form.password) }}
-              <button type="submit" class="btn btn-primary">Sign me the fuck up</button>
               </div>
           </form>
-          <br/><br/><br/><br/>
-
+          <br/>
+            <button type="submit" class="santa-button">Sign me the fuck up</button>
         </div>
     </div>
     </div>
-
-    <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script>
+     let mfk = "motherfucking";
+     let censorIndexes = [0,3,7,8,9,10,12];
+     setInterval(function(){
+       let mfks = mfk.split("");
+       for(let i=0; i<3; i++){
+         let idx = Math.floor(Math.random() * censorIndexes.length);
+         mfks[censorIndexes[idx]] = ["*","@","$","%","#"][idx];
+       }
+       document.querySelector("#mfk").innerText = mfks.join("");
+     }, 100);
 
+     let button = document.querySelector(".santa-button");
+     button.addEventListener("click", function(e){
+       let form = document.querySelector("form");
+       form.reportValidity();
+       if(form.checkValidity() === true){
+         form.submit();
+       }
+     });
+    </script>
 
   </body>
 </html>
