@@ -9,10 +9,22 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet">
       <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
       <style>
       iframe{
         width: 1250px;
         height: 500px;
+      }
+
+      #hint{
+        width: 400%;
+        height: 200px;
+      }
+
+      #address{
+        width: 400%;
+        height: 200px;
       }
       </style>
     <title>My Secret Santa</title>
@@ -20,12 +32,78 @@
   <style>
   body{
     font-family: 'Roboto Mono', monospace;
+    background-color: #fefcfb;
+    background-image: radial-gradient(circle 30px,#bfb2b2 0%, #a2999900 10%);
+    background-position: 0 0, 50px 50px;
+    background-size: 100px 100px;
+    background-attachment: fixed;
   }
+
+  .santa-button{
+    background-color: #fefcfb;
+    border-color: black;
+    border-style: solid;
+    padding: 5px 15px 5px 15px;
+    font-size: larger;
+    font-weight: bolder;
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    transition: all 0.4s;
+  }
+
+  .santa-button:hover{
+    cursor: pointer;
+    background-color: #08083a;
+    color: #fefcfb;
+    position: relative;
+    display: inline block;
+  }
+
+  .modal-content{
+    border-radius: 0px;
+    border-width: 10px;
+    border-color: black;
+  }
+
+  .form-control {
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    padding: 3px 0px 3px 3px;
+    margin: 5px 1px 3px 0px;
+    border: 2px solid black;
+    border-radius: 0px;
+    resize: none;
+    background-color: #fefcfb;
+    width: 100%;
+  }
+
+  .santa-card{
+    border-width: thick;
+    border-color: black;
+  }
+
+
+  a{
+    text-decoration: none;
+    color: inherit;
+  }
+
+  a:hover{
+    color: black;
+  }
+
+  svg{
+    cursor: pointer;
+  }
+
   </style>
   <body>
-    <nav style="background-color: #e3f2fd;" class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="/"><img src="https://res-console.cloudinary.com/dzmp7xptn/thumbnails/transform/v1/image/upload//v1605468679/aHVnZV8xX2Z0d2szYg==/drilldown" style="
-    height: 46px;"></a>
+    <nav style="background-color: #fefcfb;" class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="/" style="font-family: 'Rubik Mono One', sans-serif;">mysecretsanta</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>

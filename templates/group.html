@@ -6,22 +6,36 @@
         <h1>
           <strong>{{ group.name }}</strong>
         </h1>
+        {% if message %}
+          <div class="alert alert-success" role="alert">
+            {{ message }}
+          </div>
+        {% endif %}
         <br/><br/>
-        <a data-toggle="modal" data-target="#createGroup"><svg width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-person-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" d="M8 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm6 5c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10zM13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
-        </svg></a>
-          <br/><br/>
+        <div style="display: flex;">
+          <a data-toggle="modal" data-target="#inviteUserToGroup"><svg width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-person-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M8 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm6 5c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10zM13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+          </svg></a>
+            <br/><br/>
+
+          <a>
+            <svg style="margin-left: 15px;" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-trash" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+            </svg>
+          </a>
+        </div>
       <div class="row">
 
           <br/><br/>
         {% for i in group.users %}
         <div class="col-sm">
-        <div class="card" style="width: 18rem;">
+        <div class="santa-card card" style="width: 18rem;">
           <img class="card-img-top" src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1566878823/trexbat_tcsvbd.png" alt="Card image cap">
             <div class="card-body">
             <h5 class="card-title">{{ i.user.username }}</h5>
             <p class="card-text">hey hey ho ho.</p>
-          <a href="#" class="btn btn-danger">Kick</a>
+          <button class="santa-button" >Kick</button>
           </div>
         </div>
         <br/><br/>
@@ -32,20 +46,22 @@
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="inviteUserToGroupLabel">Create new group</h5>
+            <h5 class="modal-title" id="inviteUserToGroupLabel">Invite user to {{ group.name }}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-           <form method="POST" action="/groups">
+           <form method="POST" action="/groups?group_id={{ group.id }}">
           <div class="modal-body">
               <div class="form-group">
                 {{ form.hidden_tag() }}
                 {{ wtf.form_field(form.email) }}
               </div>
           </div>
+
+            <p style="margin-left: 10px; font-size: x-small;">If the user doesn't have an account they will get an email invite</p>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="santa-button">Submit</button>
           </div>
           </form>
         </div>

@@ -110,6 +110,27 @@ class Pair(dbMixin, UserMixin, db.Model):
     giver = db.relationship("User", foreign_keys=[giver_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
 
+class EmailInvite(dbMixin, db.Model):
+    # This is for email invites to people who haven't already signed up
+    # We need to remember what group they were invited to
+    # When they do sign up, we need to
+    # 1. add them to that group
+    # 2. redirect them to the my groups page
+    # all from the sign up view, which means we need to check this table in that view
+    # and drop the entry for this email after we have created an account for that email
+
+    __tablename__ = "email_invites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.Date)
+    invited_email = db.Column(db.String(120), unique=True, nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
+
+    def __str__(self):
+        return self.invited_email
+
+    __repr__ = __str__
+
 
 @event.listens_for(GroupsAndUsersAssociation, "before_insert", once=True)
 def create_group_admin_materialized_view(mapper, connection, target):

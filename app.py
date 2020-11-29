@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, jsonify
-from models import db, Group, User, GroupsAndUsersAssociation
+from models import db, Group, User, GroupsAndUsersAssociation, EmailInvite
 from serializers import ma
 from celery import Celery
 from flask_mail import Mail, Message
@@ -26,6 +26,7 @@ from serializers import UserSchema, GroupSchema
 
 import os
 import admin
+from datetime import datetime
 import requests as r
 import json
 
@@ -153,10 +154,22 @@ def group():
             group_id = request.args.get("group_id")
             group = Group.query.filter_by(id=group_id).first()
             user = User.query.filter_by(email=invite_user_to_group_form.email.data).first()
-            new_group_assoc = GroupsAndUsersAssociation(group=group, user=user)
-            new_group_assoc.save_to_db(db)
+            if user:
+                new_group_assoc = GroupsAndUsersAssociation(group_id=group.id, user_id=user.id)
+                new_group_assoc.save_to_db(db)
+                return render_template("group.html", group=group, form=invite_user_to_group_form)
+            else:
 
-            return render_template("group.html", group=group, form=invite_user_to_group_form)
+                new_invite = EmailInvite(
+                    timestamp=datetime.now(),
+                    invited_email=invite_user_to_group_form.email.data,
+                    group_id=group.id
+                )
+
+                new_invite.save_to_db(db)
+
+                return render_template("group.html", message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!", group=group, form=invite_user_to_group_form)
+
     group_id = request.args.get("group_id")
     if group_id:
         group = Group.query.filter_by(id=group_id).first()
@@ -215,6 +228,15 @@ def register():
 
             user.save_to_db(db)
             login_user(user)
+
+            invite = EmailInvite.query.filter_by(invited_email=user.email).first()
+            if invite:
+                new_group_assoc = GroupsAndUsersAssociation(group_id=invite.group_id, user_id=user.id)
+                new_group_assoc.save_to_db(db)
+
+                invite.delete_from_db(db)
+
+                return redirect("my_groups")
             return redirect("profile")
 
     return render_template("index.html", form=form)

@@ -2,19 +2,11 @@
 
     {% block content %}
     {% import "bootstrap/wtf.html" as wtf %}
-    <style>
-      .santa-button:hover{
-        cursor: pointer;
-        color: #dc3c4d;
-      }
-
-
-    </style>
 
     <br/><br/>
 
     <div class="container">
-    <a data-toggle="modal" data-target="#createGroup"><svg class="santa-button" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-plus-circle" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <a data-toggle="modal" data-target="#createGroup"><svg width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-plus-circle" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
       <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
       <path fill-rule="evenodd" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
     </svg></a><span>Add new group</span>
@@ -23,13 +15,18 @@
         {% for group in groups %}
         <br/><br/>
         <div class="col-lg">
-            <div class="card">
-                <div class="card-body">
+            <div class="card santa-card">
+                <div class="card-body" >
                 <h5 class="card-title">{{ group.name }}</h5>
-                {% if group.is_admin(current_user) %}
-                    <a href="/groups?group_id={{ group.id }}" class="btn btn-primary">Manage</a>
-                {% endif %}
-                    <a href="#" class="btn btn-danger">Leave</a>
+                <br/>
+                <div style="display: flex;" >
+                  {% if group.is_admin(current_user) %}
+                      <button class="santa-button"><a href="/groups?group_id={{ group.id }}">Manage</a></button> 
+                      <br/>
+                  {% endif %}
+                    <br/>
+                      <button class="santa-button" style="margin-left: 5px;">Leave</button>
+                  </div>
                 </div>
             </div>
         </div>
@@ -54,7 +51,7 @@
               </div>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="santa-button">Submit</button>
           </div>
           </form>
         </div>

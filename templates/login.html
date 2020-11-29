@@ -13,7 +13,58 @@
     <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
     <style>
     body{
-      font-family: 'Raleway', sans-serif;
+      font-family: 'Roboto Mono', monospace;
+      background-color: #fefcfb;
+      background-image: radial-gradient(circle 30px,#bfb2b2 0%, #a2999900 10%);
+      background-position: 0 0, 50px 50px;
+      background-size: 100px 100px;
+      background-attachment: fixed;
+    }
+
+    a{
+      text-decoration: none;
+      color: black;
+    }
+
+    a:hover{
+      text-decoration: none;
+      color: red;
+    }
+
+
+    .santa-button{
+      background-color: #fefcfb;
+      border-color: black;
+      border-style: solid;
+      padding: 5px 15px 5px 15px;
+      font-size: larger;
+      font-weight: bolder;
+      text-align: center;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      transition: all 0.4s;
+    }
+
+    .santa-button:hover{
+      cursor: pointer;
+      background-color: #08083a;
+      color: #fefcfb;
+      display: inline block;
+    }
+
+    .form-control {
+      -webkit-transition: all 0.30s ease-in-out;
+      -moz-transition: all 0.30s ease-in-out;
+      -ms-transition: all 0.30s ease-in-out;
+      -o-transition: all 0.30s ease-in-out;
+      outline: none;
+      padding: 3px 0px 3px 3px;
+      margin: 5px 1px 3px 0px;
+      border: 2px solid black;
+      border-radius: 0px;
+      resize: none;
+      background-color: #fefcfb;
+      width: 100%;
     }
 
     h2{
@@ -32,6 +83,7 @@
           <img src="https://media3.giphy.com/media/3o7TKPeEEjTLB7ftks/giphy.gif"/>
         </div>
         <div class="col-lg-6 offset-sm-3">
+          
           <br/><br/>
           <h2><strong>My Secret <span id="mfk">motherfucking</span> Santa</strong></h2>
           <br/><br/>
@@ -42,9 +94,11 @@
                 {{ wtf.form_field(form.username) }}
                 {{ wtf.form_field(form.password) }}
                 {{ wtf.form_field(form.remember) }}
-              <button type="submit" class="btn btn-primary">Log me the fuck in</button>
+              <button type="submit" class="santa-button">Log me the fuck in</button>
               </div>
           </form>
+          <br/><br/>
+          <a href="/"><strong>Wait, I need to sign up</strong></a>
         </div>
       </div>
     </div>
