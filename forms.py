@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, TextAreaField
+from wtforms import StringField, PasswordField, BooleanField, TextAreaField, HiddenField
 from wtforms.validators import InputRequired, Length
 
 
@@ -32,6 +32,10 @@ class LoginForm(FlaskForm):
 class PairForm(FlaskForm):
     message = TextAreaField("Admin message")
 
+
+class LeaveGroupForm(FlaskForm):
+    confirmation = TextAreaField("Are you sure? Pleas type the message above to confirm")
+    group_name = HiddenField()
 
 class ProfileEditForm(FlaskForm):
     hint = TextAreaField(validators=[InputRequired()])

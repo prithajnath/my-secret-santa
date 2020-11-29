@@ -19,6 +19,7 @@ from forms import (
     InviteUserToGroupForm,
     CreateGroupForm,
     ChangePasswordForm,
+    LeaveGroupForm
 )
 from random import choice
 from kombu.serialization import register
@@ -168,7 +169,11 @@ def group():
 
                 new_invite.save_to_db(db)
 
-                return render_template("group.html", message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!", group=group, form=invite_user_to_group_form)
+                return render_template("group.html",
+                    message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
+                    group=group,
+                    form=invite_user_to_group_form
+                )
 
     group_id = request.args.get("group_id")
     if group_id:
@@ -179,12 +184,24 @@ def group():
     return render_template("my_groups.html", groups=groups, form=create_group_form)
 
 
-@app.route("/my_groups", methods=["GET"])
+@app.route("/my_groups", methods=["GET", "POST"])
 @login_required
 def my_groups():
     form = CreateGroupForm()
+    leave_group_form = LeaveGroupForm()
     groups = [i.group for i in current_user.groups]
-    return render_template("my_groups.html", groups=groups, form=form)
+
+    if request.method == "POST":
+        if leave_group_form.validate_on_submit():
+            group_name = leave_group_form.group_name.data
+            print(leave_group_form)
+            print(group_name)
+            group = Group.query.filter_by(name=group_name).first()
+
+            group_assoc_with_user = GroupsAndUsersAssociation.query.filter_by(group=group, user=current_user).first()
+            group_assoc_with_user.delete_from_db(db)
+            return redirect("my_groups")
+    return render_template("my_groups.html", groups=groups, form=form, leave_group_form=leave_group_form)
 
 
 @app.route("/login", methods=["GET", "POST"])

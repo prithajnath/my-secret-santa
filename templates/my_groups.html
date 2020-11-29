@@ -25,7 +25,7 @@
                       <br/>
                   {% endif %}
                     <br/>
-                      <button class="santa-button" style="margin-left: 5px;">Leave</button>
+                      <button class="santa-button leave-group" style="margin-left: 5px;" data-toggle="modal" data-target="#LeaveGroup">Leave</button>
                   </div>
                 </div>
             </div>
@@ -51,11 +51,106 @@
               </div>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="santa-button">Submit</button>
+            <button type="submit" class="santa-button leave-group">Submit</button>
           </div>
           </form>
         </div>
       </div>
     </div>
+
+    <div class="modal fade" id="LeaveGroup" tabindex="-1" role="dialog" aria-labelledby="LeaveGroupLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Leave this group?</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+           <form method="POST" action="/my_groups">
+          <div class="modal-body">
+              <div class="form-group" id="leave_group_form">
+                {{ leave_group_form.hidden_tag() }}
+                <div id="expected_message"><strong></strong></div>
+                <br/>
+                {{ leave_group_form.group_name }}
+                {{ wtf.form_field(leave_group_form.confirmation) }}
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="santa-button" disabled>Submit</button>
+          </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let leave_group_buttons = document.querySelectorAll(".leave-group");
+      leave_group_buttons.forEach(function(button){
+        button.addEventListener("click", function(e){
+          var modal_form = document.querySelector("#leave_group_form");
+          var message_div = modal_form.querySelector("#expected_message");
+
+          var group_name = e.target
+          .parentElement
+          .parentElement
+          .querySelector("h5.card-title")
+          .innerText;
+
+          message_div.querySelector("strong").innerText = `I want to leave ${group_name}`;
+
+        });
+      });
+
+
+      let leave_group_form = document.querySelector("#leave_group_form");
+      let leave_group_form_button = leave_group_form
+      .parentElement
+      .parentElement
+      .querySelector("button");
+      let leave_group_form_confirmation = leave_group_form
+      .querySelector("textarea");
+
+      leave_group_form_confirmation.addEventListener("change", function(e){
+        var typed_message = e.target.value;
+        var expected_message = e.target
+        .parentElement
+        .parentElement
+        .querySelector("#expected_message")
+        .innerText;
+        if(typed_message === expected_message){
+          leave_group_form_button.disabled = false;
+        }else{
+          leave_group_form_button.disabled = true;
+        }
+      });
+
+      leave_group_form_button.addEventListener("click", function(e){
+        if(e.target.disabled === false){
+          var group_name_div = leave_group_form.querySelector("input[name=group_name]");
+          var group_name = e.target
+          .parentElement
+          .parentElement
+          .querySelector("#expected_message")
+          .innerText.slice(16,);
+
+          group_name_div.value = group_name;
+
+          leave_group_form
+          .parentElement
+          .parentElement
+          .reportValidity();
+
+
+          leave_group_form
+          .parentElement
+          .parentElement
+          .submit();
+        }
+      });
+
+
+    </script>
 
     {% endblock %}
