@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, jsonify
+from datetime import datetime
 from models import db, Group, User, GroupsAndUsersAssociation, EmailInvite
 from serializers import ma
 from celery import Celery
@@ -19,6 +20,7 @@ from forms import (
     InviteUserToGroupForm,
     CreateGroupForm,
     ChangePasswordForm,
+    CreatePairsForm,
     LeaveGroupForm
 )
 from random import choice
@@ -30,6 +32,7 @@ import admin
 from datetime import datetime
 import requests as r
 import json
+import maya
 
 GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY")
 
@@ -141,6 +144,7 @@ def santa():
 def group():
     create_group_form = CreateGroupForm()
     invite_user_to_group_form = InviteUserToGroupForm()
+    create_pairs_form = CreatePairsForm()
     if request.method == "POST":
         if create_group_form.validate_on_submit():
             new_group = Group(name=create_group_form.name.data)
@@ -149,7 +153,29 @@ def group():
             new_group_assoc.save_to_db(db)
 
             db.session.commit()
-            return render_template("group.html", group=new_group, form=invite_user_to_group_form)
+            return render_template("group.html",
+                group=new_group,
+                create_pairs_form=create_pairs_form,
+                form=invite_user_to_group_form
+            )
+
+        if create_pairs_form.validate_on_submit():
+            group_id = request.args.get("group_id")
+            group = Group.query.filter_by(id=group_id).first()
+
+            if group.is_admin(current_user) and current_user.is_authenticated:
+                task = celery.send_task("pair.create", (group_id,))
+
+                if task.status == "PENDING":
+                    timestamp = maya.MayaDT.from_datetime(datetime.utcnow())
+                    message = f"Pair creation has been initiated at {timestamp.__str__()}. Sit tight!"
+                    return render_template("group.html",
+                        message=message,
+                        group=group,
+                        form=invite_user_to_group_form,
+                        create_pairs_form=create_pairs_form
+                    )
+
         
         if invite_user_to_group_form.validate_on_submit():
             group_id = request.args.get("group_id")
@@ -172,6 +198,7 @@ def group():
                 return render_template("group.html",
                     message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
                     group=group,
+                    create_pairs_form=create_pairs_form,
                     form=invite_user_to_group_form
                 )
 
@@ -179,9 +206,16 @@ def group():
     if group_id:
         group = Group.query.filter_by(id=group_id).first()
         if group.is_admin(current_user):
-            return render_template("group.html", group=group, form=invite_user_to_group_form)
+            return render_template("group.html",
+            create_pairs_form=create_pairs_form,
+            group=group,
+            form=invite_user_to_group_form
+        )
     groups = [i.group for i in current_user.groups]
-    return render_template("my_groups.html", groups=groups, form=create_group_form)
+    return render_template("my_groups.html",
+        groups=groups,
+        create_pairs_form=create_pairs_form,
+        form=create_group_form)
 
 
 @app.route("/my_groups", methods=["GET", "POST"])

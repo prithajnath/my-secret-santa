@@ -37,6 +37,9 @@ class LeaveGroupForm(FlaskForm):
     confirmation = TextAreaField("Are you sure? Pleas type the message above to confirm")
     group_name = HiddenField()
 
+class CreatePairsForm(FlaskForm):
+    confirmation = TextAreaField("Are you sure? This will send emails to everyone in this group. Type 'yes' to continue")
+
 class ProfileEditForm(FlaskForm):
     hint = TextAreaField(validators=[InputRequired()])
     address = TextAreaField(validators=[InputRequired()])

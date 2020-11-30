@@ -24,6 +24,12 @@
               <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
             </svg>
           </a>
+
+          <a>
+            <svg  data-toggle="modal" data-target="#CreatePairs" style="margin-left: 15px;" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-diagram-2" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+             <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H11a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 5 7h2.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM3 11.5A1.5 1.5 0 0 1 4.5 10h1A1.5 1.5 0 0 1 7 11.5v1A1.5 1.5 0 0 1 5.5 14h-1A1.5 1.5 0 0 1 3 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 9 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
+            </svg>
+          </a>
         </div>
       <div class="row">
 
@@ -67,6 +73,51 @@
         </div>
       </div>
     </div>
-    </div>
-    </div>
+
+     <div class="modal fade" id="CreatePairs" tabindex="-1" role="dialog" aria-labelledby="inviteUserToGroupLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="CreatePairsLabel">Create secret santa pairs for {{ group.name }}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+           <form method="POST" action="/groups?group_id={{ group.id }}">
+          <div class="modal-body">
+              <div class="form-group">
+                {{ form.hidden_tag() }}
+                {{ wtf.form_field(create_pairs_form.confirmation) }}
+              </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="santa-button" id="create_pair_button" disabled>Submit</button>
+          </div>
+          </form>
+        </div>
+      </div>
+    </div>   
+
+
+  </div>
+</div>
+
+<script>
+
+  let create_pair_button = document.querySelector("#create_pair_button");
+  let create_pair_modal = document.querySelector("#CreatePairs");
+  let create_pair_form = create_pair_modal.querySelector("form");
+
+  create_pair_form
+  .querySelector("textarea")
+  .addEventListener("change", function(e){
+    if(e.target.value === "yes"){
+      create_pair_button.disabled = false;
+    }else{
+      create_pair_button.disabled = true;
+    }
+  });
+
+</script>
   {% endblock %}

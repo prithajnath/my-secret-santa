@@ -25,6 +25,7 @@ marshmallow-sqlalchemy = "*"
 flask-marshmallow = "*"
 aiohttp = "*"
 pytest = "*"
+maya = "*"
 
 [dev-packages]
 pylint = "*"
