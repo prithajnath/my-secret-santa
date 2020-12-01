@@ -61,7 +61,7 @@ resource "aws_security_group" "inbound_traffic" {
 }
 
 resource "aws_acm_certificate" "cert" {
-  domain_name       = "mysecretsanta.io"
+  domain_name       = "*.mysecretsanta.io"
   validation_method = "DNS"
 
   tags = {
