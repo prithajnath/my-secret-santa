@@ -1,0 +1,25 @@
+name: Secret Santa Image Build/Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build_container_image:
+    runs-on: [ self-hosted, aws-ec2-private ]
+    steps:
+      - uses: actions/checkout@v2
+      - run: | 
+          echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker-compose -f docker-compose-prod.yml build
+          docker-compose -f docker-compose-prod.yml push
+
+  deploy_all_services:
+    runs-on: [ self-hosted, aws-ec2-private ]
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          docker-compose -f docker-compose-prod.yml pull
+          docker-compose -f docker-compose-prod.yml run -d
+
+  
