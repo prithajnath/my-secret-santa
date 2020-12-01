@@ -6,6 +6,10 @@ variable "ssh_id"{
 
 }
 
+variable "inbound_http_id"{
+
+}
+
 variable "instance_ami"{
 
 }

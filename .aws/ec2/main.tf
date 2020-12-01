@@ -4,7 +4,7 @@ resource "aws_instance" "private-instance" {
 
   subnet_id = var.private_subnet_id
 
-  vpc_security_group_ids = [var.ssh_id]
+  vpc_security_group_ids = [var.ssh_id, var.inbound_http_id]
 
   key_name = var.key_name
   
