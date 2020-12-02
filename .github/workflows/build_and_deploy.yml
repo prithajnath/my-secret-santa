@@ -9,18 +9,13 @@ jobs:
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:
       - uses: actions/checkout@v2
-      - run: | 
-          echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-          docker-compose -f docker-compose-prod.yml build
-          docker-compose -f docker-compose-prod.yml push
+      - run: ./jobs/build_container_image.sh 
 
   deploy_all_services:
     needs: build_container_image
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:
       - uses: actions/checkout@v2
-      - run: |
-          docker-compose -f docker-compose-prod.yml pull
-          docker-compose -f docker-compose-prod.yml run -d
+      - run: ./jobs/deploy_all_services.sh
 
   
