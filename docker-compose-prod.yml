@@ -2,8 +2,6 @@ version: "3.8"
 services:
   secret-santa-web:
     build: .
-    volumes:
-      - /home/ubuntu/.local/volumes/my-secret-santa:/usr/bin/secretsanta
     ports:
       - "9000:9000"
     environment:
@@ -21,8 +19,6 @@ services:
   secret-santa-celery-service:
     build: .
     user: "${UID}:${GID}"
-    volumes:
-      - /home/ubuntu/.local/volumes/my-secret-santa:/usr/bin/secretsanta
     environment:
       - APP_ROOT=/usr/bin/secretsanta
       - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
@@ -35,6 +31,8 @@ services:
   secret-santa-redis:
     image: redis
   secret-santa-postgres:
+    volumes:
+      - /home/ubuntu/.local/volumes/my-secret-santa:/var/lib/postgresql/data
     image: postgres
     environment:
         - POSTGRES_HOST_AUTH_METHOD=trust 
