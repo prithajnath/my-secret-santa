@@ -3,7 +3,7 @@ services:
   secret-santa-web:
     build: .
     volumes:
-      - .:/usr/bin/secretsanta
+      - /home/ubuntu/.local/volumes/my-secret-santa:/usr/bin/secretsanta
     ports:
       - "9000:9000"
     environment:
@@ -22,7 +22,7 @@ services:
     build: .
     user: "${UID}:${GID}"
     volumes:
-      - .:/usr/bin/secretsanta
+      - /home/ubuntu/.local/volumes/my-secret-santa:/usr/bin/secretsanta
     environment:
       - APP_ROOT=/usr/bin/secretsanta
       - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
