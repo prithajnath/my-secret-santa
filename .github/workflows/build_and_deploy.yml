@@ -15,6 +15,7 @@ jobs:
           docker-compose -f docker-compose-prod.yml push
 
   deploy_all_services:
+    needs: build_container_image
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:
       - uses: actions/checkout@v2
