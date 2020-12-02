@@ -161,6 +161,7 @@ def group():
 
         if create_pairs_form.validate_on_submit():
             group_id = request.args.get("group_id")
+            print(f"Creating pairs for {group_id}")
             group = Group.query.filter_by(id=group_id).first()
 
             if group.is_admin(current_user) and current_user.is_authenticated:
@@ -184,7 +185,7 @@ def group():
             if user:
                 new_group_assoc = GroupsAndUsersAssociation(group_id=group.id, user_id=user.id)
                 new_group_assoc.save_to_db(db)
-                return render_template("group.html", group=group, form=invite_user_to_group_form)
+                return render_template("group.html", group=group, create_pairs_form=create_pairs_form, form=invite_user_to_group_form)
             else:
 
                 new_invite = EmailInvite(
@@ -195,12 +196,23 @@ def group():
 
                 new_invite.save_to_db(db)
 
-                return render_template("group.html",
-                    message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
-                    group=group,
-                    create_pairs_form=create_pairs_form,
-                    form=invite_user_to_group_form
+                to_email = new_invite.invited_email
+                admin_first_name = current_user.first_name
+                group_name = group.name
+                task = celery.send_task("user.invite", (
+                    to_email,
+                    admin_first_name,
+                    group_name
+                    )
                 )
+
+                if task.status == "PENDING":
+                    return render_template("group.html",
+                        message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
+                        group=group,
+                        create_pairs_form=create_pairs_form,
+                        form=invite_user_to_group_form
+                    )
 
     group_id = request.args.get("group_id")
     if group_id:

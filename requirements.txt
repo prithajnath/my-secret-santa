@@ -14,7 +14,7 @@ click-repl==0.1.6
 click==7.1.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'
 dateparser==1.0.0; python_version >= '3.5'
 dominate==2.6.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
-faker==4.17.1
+faker==4.18.0
 flask-admin==1.5.7
 flask-bootstrap==3.3.7.1
 flask-login==0.5.0
@@ -49,14 +49,17 @@ pyparsing==2.4.7; python_version >= '2.6' and python_version not in '3.0, 3.1, 3
 pytest==6.1.2
 python-dateutil==2.8.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 python-editor==1.0.4
+python-http-client==3.3.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 pytz==2020.4
 pytzdata==2020.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 redis==3.5.3
 regex==2020.11.13
 requests==2.25.0
+sendgrid==6.4.7
 six==1.15.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 snaptime==0.2.4
 sqlalchemy==1.3.20; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
+starkbank-ecdsa==1.1.0
 text-unidecode==1.3
 toml==0.10.2; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'
 typing-extensions==3.7.4.3

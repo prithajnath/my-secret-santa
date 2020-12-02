@@ -10,6 +10,9 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      SENDGRID_INVITE_TEMPLATE_ID: ${{ secrets.SENDGRID_INVITE_TEMPLATE_ID }}
+      SENDGRID_PAIR_TEMPLATE_ID: ${{ secrets.SENDGRID_PAIR_TEMPLATE_ID }}
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:
       - uses: actions/checkout@v2
@@ -20,6 +23,9 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      SENDGRID_INVITE_TEMPLATE_ID: ${{ secrets.SENDGRID_INVITE_TEMPLATE_ID }}
+      SENDGRID_PAIR_TEMPLATE_ID: ${{ secrets.SENDGRID_PAIR_TEMPLATE_ID }}
     needs: build_container_image
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:

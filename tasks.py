@@ -1,4 +1,5 @@
 import os
+import sendgrid
 import asyncio
 from celery import Celery
 from time import time
@@ -6,6 +7,7 @@ from requests import get
 from datetime import datetime
 from models import Pair, Group
 from aiohttp import ClientSession
+from python_http_client.exceptions import HTTPError
 from app import db, app
 
 
@@ -13,8 +15,44 @@ celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
 celery.conf.task_routes = {
     "pair.*": {"queue": "pairs_queue"},
-    "email.*": {"queue": "emails_queue"},
+    "user.*": {"queue": "users_queue"},
 }
+
+
+@celery.task(name="user.invite")
+def invite_user_to_sign_up(to_email, admin_first_name, group_name):
+    sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+    template_id = os.environ.get('SENDGRID_INVITE_TEMPLATE_ID')
+    data={
+        "from":{
+            "email":"prithaj.nath@theangrydev.io"
+        },
+        "personalizations":[
+            {
+                "to":[
+                    {
+                    "email":to_email
+                    }
+                ],
+                "subject": "SECRET SANTAAA!!!!!",
+                "dynamic_template_data":{
+                    "admin_first_name": admin_first_name,
+                    "group_name": group_name
+                }
+            }
+        ],
+        "template_id": template_id
+    }
+
+    response = None
+    try:
+        response = sg.client.mail.send.post(request_body=data)
+    except HTTPError as e:
+        print(e.to_dict)
+    if response:
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
 
 
 @celery.task(name="pair.create")
@@ -63,6 +101,41 @@ def make_pairs(group_id):
                 final_pairs.append((giver.username, receiver.username))
 
                 new_pair.save_to_db(db)
+
+                sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+                template_id = os.environ.get('SENDGRID_PAIR_TEMPLATE_ID')
+                data={
+                    "from":{
+                        "email":"prithaj.nath@theangrydev.io"
+                    },
+                    "personalizations":[
+                        {
+                            "to":[
+                                {
+                                "email":giver.email
+                                }
+                            ],
+                            "subject": "YOU ARE SOMEONE'S SECRET SANTAAA!!!!!",
+                            "dynamic_template_data":{
+                                "giver": giver.first_name,
+                                "receiver": f"{receiver.first_name} {receiver.last_name}",
+                                "receiver_address": receiver.address,
+                                "receiver_interests": receiver.hint
+                            }
+                        }
+                    ],
+                    "template_id": template_id
+                }
+
+                response = None
+                try:
+                    response = sg.client.mail.send.post(request_body=data)
+                except HTTPError as e:
+                    print(e.to_dict)
+                if response:
+                    print(response.status_code)
+                    print(response.body)
+                    print(response.headers)
 
     asyncio.run(make_pairs_async(group_id))
 

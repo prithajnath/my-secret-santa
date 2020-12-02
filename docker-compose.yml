@@ -29,6 +29,9 @@ services:
       - ENV=development
       - CELERY_BROKER_URL=redis://secret-santa-redis
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SENDGRID_INVITE_TEMPLATE_ID=${SENDGRID_INVITE_TEMPLATE_ID}
+      - SENDGRID_PAIR_TEMPLATE_ID=${SENDGRID_PAIR_TEMPLATE_ID}
       - UID=5000
       - GID=5000
     entrypoint: "./celery-init.sh"
