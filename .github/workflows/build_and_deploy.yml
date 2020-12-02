@@ -6,12 +6,20 @@ on:
 
 jobs:
   build_container_image:
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:
       - uses: actions/checkout@v2
       - run: ./jobs/build_container_image.sh 
 
   deploy_all_services:
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
     needs: build_container_image
     runs-on: [ self-hosted, aws-ec2-private ]
     steps:
