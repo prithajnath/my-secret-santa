@@ -78,13 +78,6 @@ resource "aws_elb" "santa-classic-elb" {
   subnets = [module.santa-vpc.public_subnet_id]
 
   listener {
-    instance_port     = 9000
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
-
-  listener {
     instance_port      = 9000
     instance_protocol  = "http"
     lb_port            = 443
