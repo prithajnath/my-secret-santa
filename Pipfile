@@ -27,6 +27,9 @@ aiohttp = "*"
 pytest = "*"
 maya = "*"
 sendgrid = "*"
+greenlet = "*"
+eventlet = "*"
+gevent = "*"
 
 [dev-packages]
 pylint = "*"

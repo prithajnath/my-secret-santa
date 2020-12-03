@@ -4,6 +4,8 @@ python manage.py db upgrade
 
 CONCURRENCY=$(expr 2 \* $(nproc) + 1)
 gunicorn -w  $CONCURRENCY \
+    --worker-class=gevent \
+    --worker-connections=100 \
     --timeout 120 \
     --log-level=debug \
     --threads=$CONCURRENCY \
