@@ -55,3 +55,30 @@ $ sudo add-apt-repository ppa:deadsnakes/ppa
 $ sudo apt update
 $ sudo apt install python3.8
 ```
+
+### NOTE: NGINX
+
+Initially I exposed gunicorn workers to direct Internet traffic from ELB. This setup suffered multiple worker shutdowns. Most suggestions online said I needed to use a gevent or eventlet worker pool but I decided to expose an NGINX container to ELB traffic and send that traffic upstream (gunicorn workers). Almost immediately I saw drastically better response times
+
+
+```
+INFO 
+INFO Target URL:          https://www.mysecretsanta.io
+INFO Max requests:        10000
+INFO Concurrency level:   6
+INFO Agent:               keepalive
+INFO 
+INFO Completed requests:  10000
+INFO Total errors:        0
+INFO Total time:          421.516164677 s
+INFO Requests per second: 24
+INFO Mean latency:        252.7 ms
+INFO 
+INFO Percentage of the requests served within a certain time
+INFO   50%      248 ms
+INFO   90%      261 ms
+INFO   95%      279 ms
+INFO   99%      318 ms
+INFO  100%      1066 ms (longest request)
+
+```
