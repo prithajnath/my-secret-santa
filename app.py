@@ -277,6 +277,9 @@ def logout():
 
 @app.route("/register", methods=["POST"])
 def register():
+    if current_user.is_authenticated:
+        return redirect("/profile")
+
     form = SignUpForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -301,12 +304,16 @@ def register():
 
                 return redirect("my_groups")
             return redirect("profile")
+    
+
 
     return render_template("index.html", form=form)
 
 
 @app.route("/")
 def index():
+    if current_user.is_authenticated:
+        return redirect("/profile")
     form = SignUpForm()
     return render_template("index.html", form=form)
 
