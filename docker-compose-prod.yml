@@ -1,13 +1,14 @@
 version: "3.8"
 services:
   nginx:
-    image: nginx
+    image: iamprithaj/nginx
     build:
       context: .
       dockerfile: Dockerfile-nginx
     ports:
       - "9000:80"
   secret-santa-web:
+    image: iamprithaj/secret-santa-web
     build: .
     environment:
       - APP_ROOT=/usr/bin/secretsanta
@@ -22,6 +23,7 @@ services:
       - PYTHONPATH=.
     entrypoint: "./entrypoint.sh"
   secret-santa-celery-service:
+    image: iamprithaj/secret-santa-celery-service
     build: .
     user: "${UID}:${GID}"
     environment:
