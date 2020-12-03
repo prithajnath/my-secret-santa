@@ -1,9 +1,14 @@
 version: "3.8"
 services:
+  nginx:
+    image: nginx
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    ports:
+      - "9000:80"
   secret-santa-web:
     build: .
-    ports:
-      - "9000:9000"
     environment:
       - APP_ROOT=/usr/bin/secretsanta
       - PORT=9000
