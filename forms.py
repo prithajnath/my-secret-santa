@@ -43,6 +43,12 @@ class CreatePairsForm(FlaskForm):
 class ProfileEditForm(FlaskForm):
     hint = TextAreaField(validators=[InputRequired()])
     address = TextAreaField(validators=[InputRequired()])
+    first_name = StringField(
+        "first name", validators=[InputRequired(), Length(min=2, max=150)]
+    )
+    last_name = StringField(
+        "last name", validators=[InputRequired(), Length(min=2, max=150)]
+    )
 
 class CreateGroupForm(FlaskForm):
     name = TextAreaField(validators=[InputRequired()])

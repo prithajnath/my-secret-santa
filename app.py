@@ -105,8 +105,12 @@ def edit_profile():
     if form.validate_on_submit():
         hint = form.hint.data
         address = form.address.data
+        first_name = form.first_name.data
+        last_name = form.last_name.data
         current_user.hint = hint
         current_user.address = address
+        current_user.first_name = first_name
+        current_user.last_name = last_name
 
         current_user.save_to_db(db)
 
