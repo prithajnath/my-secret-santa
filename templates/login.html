@@ -86,6 +86,11 @@
           <br/><br/>
           <h2><strong>My Secret <span id="mfk">motherfucking</span> Santa</strong></h2>
           <br/><br/>
+          {% if message %}
+            <div class="alert alert-danger" role="alert">
+              {{ message }}
+            </div>
+          {% endif %}
           <br/><br/>
             <form method="POST" action="/login">
               <div class="form-group">
