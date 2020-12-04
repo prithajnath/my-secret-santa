@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, url_for
 from datetime import datetime
 from models import db, Group, User, GroupsAndUsersAssociation, EmailInvite
 from serializers import ma
@@ -261,14 +261,20 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user.verify_hash(form.password.data, user.password):
-            login_user(user)
-            if user.admin:
-                return redirect("/admin")
+        if user:
+            if user.verify_hash(form.password.data, user.password):
+                login_user(user)
+                if user.admin:
+                    return redirect("/admin")
+                else:
+                    return redirect("/profile")
             else:
-                return redirect("/profile")
+                return redirect(url_for(".login", message=f"Please check your password"))
+        else:
+            return redirect(url_for(".login", message=f"Couldn't find user with username {form.username.data}"))
+    message = request.args.get("message")
 
-    return render_template("login.html", form=form)
+    return render_template("login.html", message=message, form=form)
 
 
 @app.route("/logout", methods=["GET", "POST"])
