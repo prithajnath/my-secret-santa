@@ -2,7 +2,7 @@ from models import User, Group, GroupsAndUsersAssociation
 from getpass import getpass
 from flask_script import Command
 from faker import Faker
-from app import db, send_email
+from app import db
 from os import environ
 from random import choice, choices
 from uuid import uuid4

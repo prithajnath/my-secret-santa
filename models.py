@@ -123,7 +123,7 @@ class EmailInvite(dbMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.Date)
-    invited_email = db.Column(db.String(120), unique=True, nullable=False)
+    invited_email = db.Column(db.String(120), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
 
     def __str__(self):

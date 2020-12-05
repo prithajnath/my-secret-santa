@@ -276,15 +276,14 @@ def register():
             user.save_to_db(db)
             login_user(user)
 
-            invite = EmailInvite.query.filter_by(invited_email=user.email).first()
-            if invite:
+            invites = EmailInvite.query.filter_by(invited_email=user.email)
+            for invite in invites:
                 new_group_assoc = GroupsAndUsersAssociation(group_id=invite.group_id, user_id=user.id)
                 new_group_assoc.save_to_db(db)
 
                 invite.delete_from_db(db)
-
+            else:
                 return redirect("/groups")
-            return redirect("profile")
         else:
             return redirect(url_for(".index", alert="User with that email or username already exists"))
 
