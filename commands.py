@@ -30,7 +30,7 @@ class SeedDatabase(Command):
             users = [(fake.first_name(), fake.last_name()) for _ in range(1000)]
             user_objects = []
             for first_name, last_name in users:
-                username = f"{first_name}{last_name}".lower()[:20]
+                username = f"{first_name}{last_name[0]}{uuid4().__str__()[:8]}".lower()[:20]
                 email = f"{username}_{uuid4().__str__()[:8]}@santa.io"
                 print(f"adding {username}")
                 random_user = User(
