@@ -29,10 +29,8 @@
                 <h5 class="card-title">{{ group.name }}</h5>
                 <br/>
                 <div style="display: flex;" >
-                  {% if group.is_admin(current_user) %}
-                      <button class="santa-button"><a href="/groups?group_id={{ group.id }}">Manage</a></button> 
+                      <button class="santa-button"><a href="/groups?group_id={{ group.id }}">View</a></button> 
                       <br/>
-                  {% endif %}
                     <br/>
                       <button class="santa-button leave-group" style="margin-left: 5px;" data-toggle="modal" data-target="#LeaveGroup">Leave</button>
                   </div>

@@ -210,7 +210,7 @@ def group():
     group = Group.query.filter_by(id=group_id).first()
 
     if group:
-        if group.is_admin(current_user):
+        if GroupsAndUsersAssociation.query.filter_by(group_id=group.id, user_id=current_user.id).first():
             return render_template("group.html",
             create_pairs_form=create_pairs_form,
             invite_user_to_group_form=invite_user_to_group_form,
