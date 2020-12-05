@@ -31,7 +31,7 @@ class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
 class User(dbMixin, UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), nullable=False)
+    username = db.Column(db.String(20), unique=True, nullable=False)
     first_name = db.Column(db.String(20), unique=False, nullable=True)
     last_name = db.Column(db.String(20), unique=False, nullable=True)
     hint = db.Column(db.String(2000), unique=False, nullable=True)
