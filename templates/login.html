@@ -87,8 +87,11 @@
           <h2><strong>My Secret <span id="mfk">motherfucking</span> Santa</strong></h2>
           <br/><br/>
           {% if message %}
-            <div class="alert alert-danger" role="alert">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
               {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
           {% endif %}
           <br/><br/>
@@ -123,6 +126,11 @@
        }
        document.querySelector("#mfk").innerText = mfks.join("");
      }, 100);
+    </script>
+    <script>
+      $('.alert').on('closed.bs.alert', function() {
+        window.location.search = "";
+      });
     </script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for
 from datetime import datetime
-from models import db, Group, User, GroupsAndUsersAssociation, EmailInvite
+from models import db, Group, User, GroupsAndUsersAssociation, EmailInvite, all_admin_materialized_view
 from serializers import ma
 from celery import Celery
 from flask_mail import Mail, Message
@@ -71,19 +71,6 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
-def send_email(sender, subject, recipients, template, data):
-    msg = Message(subject, sender=sender, recipients=recipients)
-    msg.html = render_template(template, data=data)
-
-    sent = True
-    with app.app_context():
-        try:
-            mail.send(msg)
-        except:
-            sent = False
-    return sent
-
-
 # Routes
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
@@ -122,48 +109,52 @@ def edit_profile():
 
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
-def participants_profile():
+def profile():
     return render_template("profile.html")
-
-
-@app.route("/santa", methods=["GET", "POST"])
-@login_required
-def santa():
-    form = PairForm()
-    if request.method == "POST":
-        group_id = request.args.get("group_id")
-        task = celery.send_task("pair.create", (group_id,))
-
-        if task.status == "PENDING":
-            message = "Pairs are being created. Should be done soon"
-            return render_template(
-                "santa.html", group_id=group_id, form=form, message=message
-            )
-
-    return render_template("santa.html", form=form)
-
 
 @app.route("/groups", methods=["GET", "POST"])
 @login_required
 def group():
+    # Forms
     create_group_form = CreateGroupForm()
+    leave_group_form = LeaveGroupForm()
     invite_user_to_group_form = InviteUserToGroupForm()
     create_pairs_form = CreatePairsForm()
+
+    # Args
+    message = request.args.get("message")
+
     if request.method == "POST":
-        if create_group_form.validate_on_submit():
-            new_group = Group(name=create_group_form.name.data)
+        if create_group_form.submit_create_group_form.data and create_group_form.validate():
+            group_name = create_group_form.name.data
+            group = Group.query.filter_by(name=group_name).first()
+            if group:
+                return redirect(url_for(".group",
+                        message=f"Group with the name {group_name} already exists"
+                    ))
+            new_group = Group(name=group_name)
             new_group.save_to_db(db)
             new_group_assoc = GroupsAndUsersAssociation(group=new_group, user=current_user, group_admin=True)
             new_group_assoc.save_to_db(db)
 
-            db.session.commit()
-            return render_template("group.html",
-                group=new_group,
-                create_pairs_form=create_pairs_form,
-                form=invite_user_to_group_form
-            )
+            # TODO: @prithajnath
+            # We shouldn't have to do this here. This should be taken care of by the right SQLALchemy hook
+            all_admin_materialized_view.refresh()
 
-        if create_pairs_form.validate_on_submit():
+            return redirect(url_for(".group", group_id=new_group.id))
+        
+        if leave_group_form.submit_leave_group_form.data and leave_group_form.validate():
+            group_name = leave_group_form.group_name.data
+            print(leave_group_form)
+            print(group_name)
+            group = Group.query.filter_by(name=group_name).first()
+
+            group_assoc_with_user = GroupsAndUsersAssociation.query.filter_by(group=group, user=current_user).first()
+            group_assoc_with_user.delete_from_db(db)
+            return redirect(url_for(".group"))
+
+        if create_pairs_form.submit_create_pairs_form.data and create_pairs_form.validate():
+            print(create_pairs_form.submit_create_pairs_form.data)
             group_id = request.args.get("group_id")
             print(f"Creating pairs for {group_id}")
             group = Group.query.filter_by(id=group_id).first()
@@ -174,22 +165,17 @@ def group():
                 if task.status == "PENDING":
                     timestamp = maya.MayaDT.from_datetime(datetime.utcnow())
                     message = f"Pair creation has been initiated at {timestamp.__str__()}. Sit tight!"
-                    return render_template("group.html",
-                        message=message,
-                        group=group,
-                        form=invite_user_to_group_form,
-                        create_pairs_form=create_pairs_form
-                    )
+                    return redirect(url_for(".group", message=message, group_id=group_id))
 
-        
-        if invite_user_to_group_form.validate_on_submit():
+
+        if invite_user_to_group_form.submit_invite_form.data and invite_user_to_group_form.validate():
             group_id = request.args.get("group_id")
             group = Group.query.filter_by(id=group_id).first()
             user = User.query.filter_by(email=invite_user_to_group_form.email.data).first()
             if user:
                 new_group_assoc = GroupsAndUsersAssociation(group_id=group.id, user_id=user.id)
                 new_group_assoc.save_to_db(db)
-                return render_template("group.html", group=group, create_pairs_form=create_pairs_form, form=invite_user_to_group_form)
+                return redirect(url_for(".group", group_id=group.id))
             else:
 
                 new_invite = EmailInvite(
@@ -211,47 +197,31 @@ def group():
                 )
 
                 if task.status == "PENDING":
-                    return render_template("group.html",
+                    return redirect(url_for(".group",
                         message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
-                        group=group,
+                        group_id=group_id,
                         create_pairs_form=create_pairs_form,
                         form=invite_user_to_group_form
-                    )
+                    ))
 
     group_id = request.args.get("group_id")
-    if group_id:
-        group = Group.query.filter_by(id=group_id).first()
+    message = request.args.get("message")
+    alert = request.args.get("alert")
+    group = Group.query.filter_by(id=group_id).first()
+
+    if group:
         if group.is_admin(current_user):
             return render_template("group.html",
             create_pairs_form=create_pairs_form,
+            invite_user_to_group_form=invite_user_to_group_form,
             group=group,
-            form=invite_user_to_group_form
+            message=message,
+            alert=alert
         )
-    groups = [i.group for i in current_user.groups]
-    return render_template("my_groups.html",
-        groups=groups,
-        create_pairs_form=create_pairs_form,
-        form=create_group_form)
 
-
-@app.route("/my_groups", methods=["GET", "POST"])
-@login_required
-def my_groups():
-    form = CreateGroupForm()
-    leave_group_form = LeaveGroupForm()
     groups = [i.group for i in current_user.groups]
 
-    if request.method == "POST":
-        if leave_group_form.validate_on_submit():
-            group_name = leave_group_form.group_name.data
-            print(leave_group_form)
-            print(group_name)
-            group = Group.query.filter_by(name=group_name).first()
-
-            group_assoc_with_user = GroupsAndUsersAssociation.query.filter_by(group=group, user=current_user).first()
-            group_assoc_with_user.delete_from_db(db)
-            return redirect("my_groups")
-    return render_template("my_groups.html", groups=groups, form=form, leave_group_form=leave_group_form)
+    return render_template("my_groups.html", groups=groups, create_group_form=create_group_form, leave_group_form=leave_group_form, message=message, alert=alert)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -313,7 +283,7 @@ def register():
 
                 invite.delete_from_db(db)
 
-                return redirect("my_groups")
+                return redirect("/groups")
             return redirect("profile")
         else:
             return redirect(url_for(".index", alert="User with that email or username already exists"))

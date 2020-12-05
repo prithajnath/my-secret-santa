@@ -7,8 +7,11 @@
           <strong>{{ group.name }}</strong>
         </h1>
         {% if message %}
-          <div class="alert alert-success" role="alert">
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ message }}
+             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+             </button>
           </div>
         {% endif %}
         <br/><br/>
@@ -60,14 +63,14 @@
            <form method="POST" action="/groups?group_id={{ group.id }}">
           <div class="modal-body">
               <div class="form-group">
-                {{ form.hidden_tag() }}
-                {{ wtf.form_field(form.email) }}
+                {{ invite_user_to_group_form.hidden_tag() }}
+                {{ wtf.form_field(invite_user_to_group_form.email) }}
               </div>
           </div>
 
             <p style="margin-left: 10px; font-size: x-small;">If the user doesn't have an account they will get an email invite</p>
           <div class="modal-footer">
-            <button type="submit" name="invite_user_submit" class="santa-button">Submit</button>
+                {{ invite_user_to_group_form.submit_invite_form(class_="santa-button") }}
           </div>
           </form>
         </div>
@@ -86,13 +89,13 @@
            <form method="POST" action="/groups?group_id={{ group.id }}">
           <div class="modal-body">
               <div class="form-group">
-                {{ form.hidden_tag() }}
+                {{ create_pairs_form.hidden_tag() }}
                 {{ wtf.form_field(create_pairs_form.confirmation) }}
               </div>
           </div>
 
           <div class="modal-footer">
-            <button type="submit" name="create_pairs_submit" class="santa-button" id="create_pair_button" disabled>Submit</button>
+                {{ create_pairs_form.submit_create_pairs_form(class_="santa-button", id="create_pair_button", disabled="true") }}
           </div>
           </form>
         </div>

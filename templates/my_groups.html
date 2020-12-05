@@ -11,7 +11,16 @@
       <path fill-rule="evenodd" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
     </svg></a><span>Add new group</span>
     <br/><br/>
+      {% if message %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+      {% endif %}
       <div class="row">
+
         {% for group in groups %}
         <br/><br/>
         <div style="margin-top: 8px;" class="col-sm">
@@ -47,12 +56,12 @@
            <form method="POST" action="/groups">
           <div class="modal-body">
               <div class="form-group">
-                {{ form.hidden_tag() }}
-                {{ wtf.form_field(form.name) }}
+                {{ create_group_form.hidden_tag() }}
+                {{ wtf.form_field(create_group_form.name) }}
               </div>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="santa-button leave-group">Submit</button>
+                {{ create_group_form.submit_create_group_form(class_="santa-button") }}
           </div>
           </form>
         </div>
@@ -68,7 +77,7 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-           <form method="POST" action="/my_groups">
+           <form method="POST" action="/groups">
           <div class="modal-body">
               <div class="form-group" id="leave_group_form">
                 {{ leave_group_form.hidden_tag() }}
@@ -79,7 +88,7 @@
               </div>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="santa-button" disabled>Submit</button>
+                {{ leave_group_form.submit_leave_group_form(class_="santa-button", disabled="true") }}
           </div>
           </form>
         </div>

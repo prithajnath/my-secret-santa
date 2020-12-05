@@ -118,7 +118,7 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                 <a class="dropdown-item" href="/profile">My profile</a>
-                <a class="dropdown-item" href="/my_groups">My groups</a>
+                <a class="dropdown-item" href="/groups">My groups</a>
                 <a class="dropdown-item" href="/change_password">Change password</a>
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="/logout">Logout</a>
@@ -135,6 +135,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
-
+    <script>
+      $('.alert').on('closed.bs.alert', function() {
+        window.location.search = "";
+      });
+    </script>
   </body>
 </html>

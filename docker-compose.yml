@@ -2,6 +2,7 @@ version: "3.8"
 services:
   secret-santa-web:
     build: .
+    restart: always
     volumes:
       - .:/usr/bin/secretsanta
     ports:
@@ -20,6 +21,7 @@ services:
     entrypoint: "./dev-entrypoint.sh"
   secret-santa-celery-service:
     build: .
+    restart: always
     user: "${UID}:${GID}"
     volumes:
       - .:/usr/bin/secretsanta
