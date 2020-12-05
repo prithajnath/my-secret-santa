@@ -292,8 +292,9 @@ def register():
 
     form = SignUpForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if not user:
+        username = User.query.filter_by(username=form.username.data).first()
+        email = User.query.filter_by(email=form.email.data).first()
+        if not username and not email:
             user = User(
                 username=form.username.data,
                 first_name=form.first_name.data,
@@ -314,18 +315,17 @@ def register():
 
                 return redirect("my_groups")
             return redirect("profile")
-    
-
-
-    return render_template("index.html", form=form)
-
+        else:
+            return redirect(url_for(".index", alert="User with that email or username already exists"))
 
 @app.route("/")
 def index():
     if current_user.is_authenticated:
         return redirect("/profile")
     form = SignUpForm()
-    return render_template("index.html", form=form)
+    alert = request.args.get("alert")
+    return render_template("index.html", alert=alert, form=form)
+
 
 
 if __name__ == "__main__":

@@ -166,15 +166,16 @@
           
         <div class="col">
           <br/></br>
+          {% if alert %}
+            <div class="alert alert-danger" role="alert">
+              {{ alert }}
+            </div>
+            <br/> 
+          {% endif %}
           <h2><strong>My Secret <span id="mfk">motherfucking</span> Santa</strong></h2>
           <br/></br>
           <a href="/login"><strong> Sign me the fuck in (already have an account) </strong> </a>
           <br/></br>
-          {% if message %}
-            <div class="alert alert-danger" style="opacity:0.8;">
-              {{ message }}
-            </div>
-          {% endif %}
             <form method="POST" action="/register">
               <div class="drop"></div>
               <div class="drop"></div>
