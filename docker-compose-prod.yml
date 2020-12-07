@@ -2,6 +2,7 @@ version: "3.8"
 services:
   nginx:
     image: iamprithaj/nginx
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile-nginx
@@ -9,6 +10,7 @@ services:
       - "9000:80"
   secret-santa-web:
     image: iamprithaj/secret-santa-web
+    restart: always
     build: .
     environment:
       - APP_ROOT=/usr/bin/secretsanta
@@ -27,6 +29,7 @@ services:
     entrypoint: "./entrypoint.sh"
   secret-santa-celery-service:
     image: iamprithaj/secret-santa-celery-service
+    restart: always
     build: .
     user: "${UID}:${GID}"
     environment:
@@ -43,9 +46,11 @@ services:
     entrypoint: "./celery-init.sh"
   secret-santa-redis:
     image: redis
+    restart: always
   secret-santa-postgres:
     volumes:
       - /home/ubuntu/.local/volumes/my-secret-santa:/var/lib/postgresql/data
     image: postgres
+    restart: always
     environment:
         - POSTGRES_HOST_AUTH_METHOD=trust 
