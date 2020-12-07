@@ -9,4 +9,6 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
+        with:
+          path: '_test_work'
       - run: ./test.sh
