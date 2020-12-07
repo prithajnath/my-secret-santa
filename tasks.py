@@ -102,40 +102,41 @@ def make_pairs(group_id):
 
                 new_pair.save_to_db(db)
 
-                sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
-                template_id = os.environ.get('SENDGRID_PAIR_TEMPLATE_ID')
-                data={
-                    "from":{
-                        "email":"prithaj.nath@theangrydev.io"
-                    },
-                    "personalizations":[
-                        {
-                            "to":[
-                                {
-                                "email":giver.email
+                if os.getenv("ENV") == "production":
+                    sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+                    template_id = os.environ.get('SENDGRID_PAIR_TEMPLATE_ID')
+                    data={
+                        "from":{
+                            "email":"prithaj.nath@theangrydev.io"
+                        },
+                        "personalizations":[
+                            {
+                                "to":[
+                                    {
+                                    "email":giver.email
+                                    }
+                                ],
+                                "subject": "YOU ARE SOMEONE'S SECRET SANTAAA!!!!!",
+                                "dynamic_template_data":{
+                                    "giver": giver.first_name,
+                                    "receiver": f"{receiver.first_name} {receiver.last_name}",
+                                    "receiver_address": receiver.address,
+                                    "receiver_interests": receiver.hint
                                 }
-                            ],
-                            "subject": "YOU ARE SOMEONE'S SECRET SANTAAA!!!!!",
-                            "dynamic_template_data":{
-                                "giver": giver.first_name,
-                                "receiver": f"{receiver.first_name} {receiver.last_name}",
-                                "receiver_address": receiver.address,
-                                "receiver_interests": receiver.hint
                             }
-                        }
-                    ],
-                    "template_id": template_id
-                }
+                        ],
+                        "template_id": template_id
+                    }
 
-                response = None
-                try:
-                    response = sg.client.mail.send.post(request_body=data)
-                except HTTPError as e:
-                    print(e.to_dict)
-                if response:
-                    print(response.status_code)
-                    print(response.body)
-                    print(response.headers)
+                    response = None
+                    try:
+                        response = sg.client.mail.send.post(request_body=data)
+                    except HTTPError as e:
+                        print(e.to_dict)
+                    if response:
+                        print(response.status_code)
+                        print(response.body)
+                        print(response.headers)
 
     asyncio.run(make_pairs_async(group_id))
 

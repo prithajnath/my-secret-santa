@@ -1,12 +1,15 @@
 version: "3.8"
 services:
   secret-santa-web:
-    build: .
+    image: iamprithaj/dev-secret-santa-web
+    container_name: dev-secret-santa-web
+    networks:
+      - santa_test_network
     restart: always
     volumes:
       - .:/usr/bin/secretsanta
     ports:
-      - "9000:9000"
+      - "9001:9000"
     environment:
       - APP_ROOT=/usr/bin/secretsanta
       - PORT=9000
@@ -20,7 +23,10 @@ services:
       - PYTHONPATH=.
     entrypoint: "./dev-entrypoint.sh"
   secret-santa-celery-service:
-    build: .
+    image: iamprithaj/dev-secret-santa-celery-service
+    container_name: dev-secret-santa-celery-service
+    networks:
+      - santa_test_network
     restart: always
     user: "${UID}:${GID}"
     volumes:
@@ -38,8 +44,20 @@ services:
       - GID=5000
     entrypoint: "./celery-init.sh"
   secret-santa-redis:
+    image: iamprithaj/dev-secret-santa-redis
+    container_name: dev-secret-santa-redis
+    networks:
+      - santa_test_network
     image: redis
   secret-santa-postgres:
+    image: iamprithaj/dev-secret-santa-postgres
+    container_name: dev-secret-santa-postgres
+    networks:
+      - santa_test_network
     image: postgres
     environment:
-        - POSTGRES_HOST_AUTH_METHOD=trust 
+        - POSTGRES_HOST_AUTH_METHOD=trust
+
+networks:
+  santa_test_network:
+    driver: bridge
