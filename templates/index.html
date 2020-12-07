@@ -13,149 +13,148 @@
       <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
       <link rel="preconnect" href="https://fonts.gstatic.com">
       <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
-      <style>
-      iframe{
-        width: 1250px;
-        height: 500px;
+    <title>My Secret Santa</title>
+    <style>
+      body {
+        font-family: "Roboto Mono", monospace;
+        background-color: #fefcfb;
+        background-image: radial-gradient(circle 30px, #bfb2b2 0%, #a2999900 10%);
+        background-position: 0 0, 50px 50px;
+        background-size: 100px 100px;
+        background-attachment: fixed;
+      }
+
+      a {
+        text-decoration: none;
+        color: black;
+      }
+
+      a:hover {
+        text-decoration: none;
+        color: red;
+      }
+
+      .button-group {
+        position: relative;
+      }
+
+      .santa-button {
+        background-color: #fefcfb;
+        border-color: black;
+        border-style: solid;
+        padding: 5px 15px 5px 15px;
+        font-size: larger;
+        font-weight: bolder;
+        text-align: center;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        transition: all 0.4s;
+      }
+
+      .santa-button:hover {
+        cursor: pointer;
+        background-color: #f12933;
+        color: #fefcfb;
+      }
+
+      .drop-group {
+        display: none;
+        position: absolute;
+      }
+
+      .santa-button:hover + div.drop-group {
+        display: block;
+      }
+
+      .drop {
+        background: #fefcfb;
+        width: 6px;
+        height: 9px;
+        border-radius: 15px;
+        right: 210px;
+        animation: fall 2s ease-in 0s infinite;
+        animation-fill-mode: both;
+        position: absolute;
+      }
+      .drop:nth-child(even) {
+        top: 10px;
+        left: -12px;
+        width: 8px;
+        height: 8px;
+        border-radius: 40px;
+        animation-delay: 0.5s !important;
+      }
+      .drop:nth-child(3n - 1) {
+        top: 0px;
+        left: 20px;
+        left-animation-delay: 1s !important;
+      }
+      .drop:nth-child(3n + 1) {
+        left: 0px;
+        top: -10px;
+        animation-delay: 2s !important;
+      }
+      .drop:nth-child(4n - 1) {
+        left: 110px;
+        top: -30px;
+        animation-delay: 1.5s !important;
+      }
+      .drop:nth-child(4n + 1) {
+        left: 45px;
+        top: 15px;
+        animation-delay: 1s !important;
+      }
+      .drop:nth-child(5n - 1) {
+        left: 95px;
+        top: -40px;
+      }
+      .drop:nth-child(-5n + 1) {
+        left: 65px;
+        top: 10px;
+        animation-delay: 1.25s !important;
+      }
+      .drop:nth-child(6n + 1) {
+        left: 37px;
+        top: -65px;
+        animation-delay: 1s !important;
+      }
+
+      h2 {
+        font-family: "Rubik Mono One", sans-serif;
+      }
+
+      @keyframes fall {
+        0% {
+          top: 0px;
+          opacity: 0.6;
+        }
+
+        60% {
+          opacity: 0.8;
+          margin-left: 45px;
+        }
+        100% {
+          top: 100%;
+          opacity: 1;
+        }
+      }
+
+      .form-control {
+        -webkit-transition: all 0.3s ease-in-out;
+        -moz-transition: all 0.3s ease-in-out;
+        -ms-transition: all 0.3s ease-in-out;
+        -o-transition: all 0.3s ease-in-out;
+        outline: none;
+        padding: 3px 0px 3px 3px;
+        margin: 5px 1px 3px 0px;
+        border: 2px solid black;
+        border-radius: 0px;
+        resize: none;
+        background-color: #fefcfb;
+        width: 100%;
       }
       </style>
-    <title>My Secret Santa</title>
   </head>
-  <style>
-  body{
-    font-family: 'Roboto Mono', monospace;
-    background-color: #fefcfb;
-    background-image: radial-gradient(circle 30px,#bfb2b2 0%, #a2999900 10%);
-    background-position: 0 0, 50px 50px;
-    background-size: 100px 100px;
-    background-attachment: fixed;
-  }
-
-
-    a{
-      text-decoration: none;
-      color: black;
-    }
-
-    a:hover{
-      text-decoration: none;
-      color: red;
-    }
-
-  .santa-button{
-    background-color: #fefcfb;
-    border-color: black;
-    border-style: solid;
-    padding: 5px 15px 5px 15px;
-    font-size: larger;
-    font-weight: bolder;
-    text-align: center;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    transition: all 0.4s;
-  }
-
-  .santa-button:hover{
-    cursor: pointer;
-    background-color: #f12933;
-    color: #fefcfb;
-    position: fixed;
-    z-index: -2;
-    display: inline block;
-  }
-
-  
-  .drop {
-    background: #fefcfb;
-    z-index: -1;
-    width: 6px;
-    height: 9px;
-    border-radius: 15px;
-    right: 210px;
-    animation: fall 2s ease-in 0s infinite;
-    animation-fill-mode: both;
-    position: absolute;
-  }
-.drop:nth-child(even) {
-    top: 10px;
-    left: -12px;
-    width: 8px;
-    height: 8px;
-    border-radius: 40px;
-    animation-delay: 0.5s !important;
-}
-.drop:nth-child(3n - 1) {
-    top: 0px;
-    left: 20px;
-    left-animation-delay: 1s !important;
-}
-.drop:nth-child(3n + 1) {
-    left: 0px;
-    top: -10px;
-    animation-delay: 2s !important;
-}
-.drop:nth-child(4n - 1) {
-    left: 110px;
-    top: -30px;
-    animation-delay: 1.5s !important;
-}
-.drop:nth-child(4n + 1) {
-    left: 45px;
-    top: 15px;
-    animation-delay: 1s !important;
-}
-.drop:nth-child(5n - 1) {
-    left: 95px;
-    top: -40px;
-}
-.drop:nth-child(-5n + 1) {
-    left: 65px;
-    top: 10px;
-    animation-delay: 1.25s !important;
-}
-.drop:nth-child(6n + 1) {
-    left: 37px;
-    top: -65px;
-    animation-delay: 1s !important;
-}
-
-  h2{
-    font-family: 'Rubik Mono One', sans-serif;
-  }
-
-  @keyframes fall {
-    0% {
-      margin-top: 500px;
-      opacity: 0.6;
-    }
-
-    60% {
-      opacity: 0.8;
-      margin-left: 45px;
-    }
-    100% {
-      margin-top: 900px;
-      opacity: 1;
-    }
-  }
-
-
-  .form-control {
-    -webkit-transition: all 0.30s ease-in-out;
-    -moz-transition: all 0.30s ease-in-out;
-    -ms-transition: all 0.30s ease-in-out;
-    -o-transition: all 0.30s ease-in-out;
-    outline: none;
-    padding: 3px 0px 3px 3px;
-    margin: 5px 1px 3px 0px;
-    border: 2px solid black;
-    border-radius: 0px;
-    resize: none;
-    background-color: #fefcfb;
-    width: 100%;
-  }   
-
-  </style>
   <body>
     <div class="container" style="z-index: 3;">
       <div class="row">
@@ -180,19 +179,6 @@
           <a href="/login"><strong> Sign me the fuck in (already have an account) </strong> </a>
           <br/></br>
             <form method="POST" action="/register">
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
-              <div class="drop"></div>
               <div class="form-group">
                 {{ form.hidden_tag() }}
                 {{ wtf.form_field(form.username) }}
@@ -203,7 +189,24 @@
               </div>
           </form>
           <br/>
-            <button type="submit" class="santa-button">Sign me the fuck up</button>
+            <div class="button-group">
+              <button type="submit" class="santa-button">Sign me the fuck up</button>
+              <div class="drop-group">
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+              </div>
+            </div>
         </div>
     </div>
     </div>
