@@ -6,9 +6,7 @@ on:
 
 jobs:
   test_on_pull_request_to_master:
-    runs-on: self-hosted
+    runs-on: [ self-hosted, aws-ec2-private, tests ]
     steps:
       - uses: actions/checkout@v2
-        with:
-          path: '_test_work'
       - run: ./test.sh
