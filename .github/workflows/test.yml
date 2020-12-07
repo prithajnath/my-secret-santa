@@ -9,4 +9,4 @@ jobs:
     runs-on: [ self-hosted, aws-ec2-private, tests ]
     steps:
       - uses: actions/checkout@v2
-      - run: ls && pwd
+      - run: cd .. && cp -r my-secret-santa /home/ubuntu/tmp-runs/dev-my-secret-santa && cd /home/ubuntu/tmp-runs/dev-my-secret-santa && ./test.sh
