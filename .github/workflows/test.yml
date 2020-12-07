@@ -6,7 +6,7 @@ on:
 
 jobs:
   test_on_pull_request_to_master:
-    runs-on: self-hosted
+    runs-on: [ self-hosted, aws-ec2-private, tests ]
     steps:
       - uses: actions/checkout@v2
-      - run: ./test.sh
+      - run: UUID=$(uuidgen) && echo $UUID && mkdir /tmp/$UUID && cd .. && cp -r my-secret-santa /tmp/$UUID/dev-my-secret-santa && cd /tmp/$UUID/dev-my-secret-santa && ./test.sh
