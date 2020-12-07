@@ -9,4 +9,4 @@ jobs:
     runs-on: [ self-hosted, aws-ec2-private, tests ]
     steps:
       - uses: actions/checkout@v2
-      - run: cd .. && cp -r my-secret-santa /home/ubuntu/tmp-runs/dev-my-secret-santa && cd /home/ubuntu/tmp-runs/dev-my-secret-santa && ./test.sh
+      - run: UUID=$(uuidgen) && echo $UUID && mkdir /tmp/$UUID && cd .. && cp -r my-secret-santa /tmp/$UUID/dev-my-secret-santa && cd /tmp/$UUID/dev-my-secret-santa && ./test.sh
