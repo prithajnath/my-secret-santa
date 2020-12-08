@@ -80,4 +80,4 @@ python3 -c "$PYTHON"
 # Build the Puppeteer image
 docker build -t santa-puppet -f puppeteer.Dockerfile .
 
-docker run --security-opt seccomp=chrome.json --network=my-secret-santa_santa_test_network santa-puppet
+docker run --security-opt seccomp=chrome.json --network=santa_test_network santa-puppet
