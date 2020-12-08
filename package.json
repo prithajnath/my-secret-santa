@@ -1,0 +1,28 @@
+{
+  "name": "my-secret-santa",
+  "version": "1.0.0",
+  "description": "![sample image](mysecretsanta.png)",
+  "main": "",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prithajnath/my-secret-santa.git"
+  },
+  "author": "Prithaj Nath",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/prithajnath/my-secret-santa/issues"
+  },
+  "homepage": "https://github.com/prithajnath/my-secret-santa#readme",
+  "dependencies": {
+    "jest-environment-node": "^26.6.2",
+    "jest-environment-puppeteer": "^4.4.0",
+    "jest-puppeteer": "^4.4.0",
+    "puppeteer": "^5.5.0"
+  }
+}
