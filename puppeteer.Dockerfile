@@ -7,16 +7,14 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y libgconf-2-4 \
     libpq-dev \
     build-essential \
     wget \
-	traceroute \
-	curl \
-	iputils-ping \
-	bridge-utils \
-	dnsutils \
-	netcat-openbsd \
-	jq \
-    gnupg \
-    nodejs \
-    npm
+    traceroute \
+    curl \
+    iputils-ping \
+    bridge-utils \
+    dnsutils \
+    netcat-openbsd \
+    jq \
+    gnupg
 
 COPY package.json package.json
 COPY package-lock.json package-lock.json
@@ -34,7 +32,7 @@ RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
     && chown -R pptruser:pptruser ./node_modules
 
 RUN chmod u+x test_end_to_end.sh
-RUN chown pptruser.pptruser test_end_to_end.sh 
+RUN chown pptruser.pptruser test_end_to_end.sh
 
 # Run everything after as non-privileged user.
 USER pptruser
