@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for
-from datetime import datetime
-from models import db, Group, User, GroupsAndUsersAssociation, EmailInvite, all_admin_materialized_view
+from datetime import datetime, date
+from models import db, Group, User, Pair, GroupsAndUsersAssociation, EmailInvite, all_admin_materialized_view
 from serializers import ma
+from sqlalchemy import func
 from celery import Celery
 from flask_mail import Mail, Message
 from flask_login import (
@@ -159,13 +160,21 @@ def group():
             print(f"Creating pairs for {group_id}")
             group = Group.query.filter_by(id=group_id).first()
 
-            if group.is_admin(current_user) and current_user.is_authenticated:
-                task = celery.send_task("pair.create", (group_id,))
+            pair_latest_timestamp = Pair.query.with_entities(func.max(Pair.timestamp)).filter_by(group_id=group_id).first()[0] or date(1970,1,1)
+            today = date.today()
 
-                if task.status == "PENDING":
-                    timestamp = maya.MayaDT.from_datetime(datetime.utcnow())
-                    message = f"Pair creation has been initiated at {timestamp.__str__()}. Sit tight!"
-                    return redirect(url_for(".group", message=message, group_id=group_id))
+            delta = today - pair_latest_timestamp
+            if delta.days > 1:
+                if group.is_admin(current_user) and current_user.is_authenticated:
+                    task = celery.send_task("pair.create", (group_id,))
+
+                    if task.status == "PENDING":
+                        timestamp = maya.MayaDT.from_datetime(datetime.utcnow())
+                        message = f"Pair creation has been initiated at {timestamp.__str__()}. Sit tight!"
+                        return redirect(url_for(".group", message=message, group_id=group_id))
+            else:
+                message = "This group is in cooldown (Pairs were created recently). Please try again in a day"
+                return redirect(url_for(".group", message=message, group_id=group_id))
 
 
         if invite_user_to_group_form.submit_invite_form.data and invite_user_to_group_form.validate():
