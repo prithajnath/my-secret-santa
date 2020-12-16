@@ -1,8 +1,17 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for
 from datetime import datetime, date
-from models import db, Group, User, Pair, GroupsAndUsersAssociation, EmailInvite, all_admin_materialized_view
+from models import (
+    db,
+    Group,
+    User,
+    Pair,
+    GroupsAndUsersAssociation,
+    EmailInvite,
+    PasswordReset,
+    all_admin_materialized_view
+)
 from serializers import ma
-from sqlalchemy import func
+from sqlalchemy import func, select
 from celery import Celery
 from flask_mail import Mail, Message
 from flask_login import (
@@ -22,6 +31,7 @@ from forms import (
     CreateGroupForm,
     ChangePasswordForm,
     CreatePairsForm,
+    ResetPasswordForm,
     LeaveGroupForm
 )
 from random import choice
@@ -30,6 +40,7 @@ from serializers import UserSchema, GroupSchema
 
 import os
 import admin
+import hashlib
 from datetime import datetime
 import requests as r
 import json
@@ -73,6 +84,78 @@ def load_user(user_id):
 
 
 # Routes
+
+@app.route("/reset_password", methods=["GET", "POST"])
+def reset_password():
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        user = User.query.filter_by(email=email).first()
+        if user:
+            currently_running_reset_attempt = PasswordReset.query.with_entities(func.max(PasswordReset.started_at)).filter_by(user_id=user.id, status="resetting").first()[0]
+            if currently_running_reset_attempt:
+                message = "Already processing recent password reset"
+                return render_template("reset_password.html", form=form, message=message)
+            
+            password_reset_attempts = PasswordReset.query.filter_by(user_id=user.id).all()
+            if len(password_reset_attempts) < 3:
+                # GRAB ADVISORY LOCK
+                advisory_lock_key = int(hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16) % (10 ** 8) 
+                advisory_lock = db.session.execute(select([func.pg_try_advisory_lock(advisory_lock_key)])).fetchone()
+                if advisory_lock:
+                    new_attempt = PasswordReset(
+                        user_id=user.id,
+                        started_at=datetime.now(),
+                        status="resetting"
+                    )
+
+                    db.session.add(new_attempt)
+                    db.session.commit()
+
+                    celery.send_task("user.reset_password", (user.email,))
+
+                    # Release lock
+                    db.session.execute(select([func.pg_advisory_unlock(advisory_lock_key)]))
+
+                    message = f"A temporary password will be sent to {user.email} shortly"
+                    return render_template("reset_password.html", form=form, message=message)
+                else:
+                    return redirect("/reset_password")
+            else:
+                last_reset_attempt_date = PasswordReset.query.with_entities(func.max(PasswordReset.started_at)).filter_by(user_id=user.id).first()[0]
+                today = datetime.now()
+
+                if (today - last_reset_attempt_date).days < 30:
+                    message = "Too many reset attempts recently. Check back again after a few days"
+                    return render_template("reset_password.html", form=form, message=message)
+                else:
+
+                    for attempt in password_reset_attempts:
+                        attempt.delete_from_db(db)
+
+                    # GRAB ADVISORY LOCK
+                    advisory_lock_key = int(hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16) % (10 ** 8) 
+                    advisory_lock = db.session.execute(select([func.pg_try_advisory_lock(advisory_lock_key)])).fetchone()
+
+                    new_attempt = PasswordReset(
+                        user_id=user.id,
+                        started_at=datetime.now(),
+                        status="resetting"
+                    )
+
+                    new_attempt.save_to_db(db)                 
+                    celery.send_task("user.reset_password", (user.email,))
+
+                    # Release lock
+                    db.session.execute(select([func.pg_advisory_unlock(advisory_lock_key)]))
+
+                    message = f"A temporary password will be sent to {user.email} shortly"
+                    return render_template("reset_password.html", form=form, message=message)
+
+        message = f"No user with the email {form.email.data} was found"
+        return render_template("reset_password.html", form=form, message=message)
+    return render_template("reset_password.html", form=form)
+
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():

@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy, event
 from passlib.hash import pbkdf2_sha256
+from enum import Enum
 from mixins import dbMixin
 from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import UUID
@@ -130,6 +131,20 @@ class EmailInvite(dbMixin, db.Model):
         return self.invited_email
 
     __repr__ = __str__
+
+class PasswordReset(dbMixin, db.Model):
+    __tablename__ = "password_resets"
+
+    class ResetStatus(Enum):
+        resetting = 0
+        finished = 1
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    user = db.relationship("User")
+    started_at = db.Column(db.DateTime)
+    finished_at = db.Column(db.DateTime)
+    status = db.Column(db.Enum(ResetStatus))
 
 
 @event.listens_for(GroupsAndUsersAssociation, "before_insert", once=True)

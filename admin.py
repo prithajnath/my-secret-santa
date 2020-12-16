@@ -1,6 +1,6 @@
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
-from models import User, Group, GroupsAndUsersAssociation, Pair, EmailInvite
+from models import User, Group, GroupsAndUsersAssociation, Pair, EmailInvite, PasswordReset
 from flask_login import current_user
 from flask import redirect
 
@@ -23,3 +23,4 @@ def register(app, db):
     admin.add_view(ModelView(Group, db.session))
     admin.add_view(ModelView(Pair, db.session))
     admin.add_view(ModelView(EmailInvite, db.session))
+    admin.add_view(ModelView(PasswordReset, db.session))

@@ -42,6 +42,9 @@ class CreatePairsForm(FlaskForm):
     confirmation = TextAreaField("Are you sure? This will send emails to everyone in this group. Type 'yes' to continue")
     submit_create_pairs_form = SubmitField('Submit')
 
+class ResetPasswordForm(FlaskForm):
+    email = StringField("email", validators=[InputRequired(), Length(min=4, max=100)])
+
 class ProfileEditForm(FlaskForm):
     hint = TextAreaField(validators=[InputRequired()])
     address = TextAreaField(validators=[InputRequired()])

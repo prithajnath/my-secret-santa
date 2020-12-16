@@ -5,7 +5,7 @@ from celery import Celery
 from time import time
 from requests import get
 from datetime import datetime
-from models import Pair, Group
+from models import Pair, Group, User, PasswordReset
 from aiohttp import ClientSession
 from python_http_client.exceptions import HTTPError
 from app import db, app
@@ -18,6 +18,57 @@ celery.conf.task_routes = {
     "user.*": {"queue": "users_queue"},
 }
 
+
+@celery.task(name="user.reset_password")
+def reset_user_password(email):
+    with app.app_context():
+        import random
+        from os import getrandom
+
+        random.seed(getrandom(100))
+        user = User.query.filter_by(email=email).first()
+        new_password = ''.join([chr(random.randint(50,127)) for _ in range((random.randint(14, 20)))])
+        user.set_password(new_password)
+        user.save_to_db(db)
+
+        reset_status = PasswordReset.query.filter_by(user_id=user.id, status="resetting").first()
+        reset_status.status = "finished"
+        reset_status.finished_at = datetime.now()
+        reset_status.save_to_db(db)
+
+        if os.getenv("ENV") == "production":
+            sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+            template_id = os.environ.get('SENDGRID_RESET_PASSWORD_TEMPLATE_ID')
+            data={
+                "from":{
+                    "email":"prithaj.nath@theangrydev.io"
+                },
+                "personalizations":[
+                    {
+                        "to":[
+                            {
+                            "email":email
+                            }
+                        ],
+                        "subject": "PASSWORD RESET FOR SECRET SANTA!!!!!",
+                        "dynamic_template_data":{
+                            "first_name": user.first_name,
+                            "new_password": new_password
+                        }
+                    }
+                ],
+                "template_id": template_id
+            }
+
+            response = None
+            try:
+                response = sg.client.mail.send.post(request_body=data)
+            except HTTPError as e:
+                print(e.to_dict)
+            if response:
+                print(response.status_code)
+                print(response.body)
+                print(response.headers)
 
 @celery.task(name="user.invite")
 def invite_user_to_sign_up(to_email, admin_first_name, group_name):
@@ -137,6 +188,9 @@ def make_pairs(group_id):
                         print(response.status_code)
                         print(response.body)
                         print(response.headers)
+                
+                new_pair.emailed = True
+                new_pair.save_to_db(db)
 
     asyncio.run(make_pairs_async(group_id))
 
