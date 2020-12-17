@@ -5,12 +5,13 @@ from mixins import dbMixin
 from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid1, uuid4
-from sql.materialized_views import AllAdminView
+from sql.materialized_views import AllAdminView, AllLatestPairsView
 
 db = SQLAlchemy()
 
 
 all_admin_materialized_view = AllAdminView(db)
+all_latest_pairs_view = AllLatestPairsView(db)
 
 
 class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
@@ -102,7 +103,7 @@ class Pair(dbMixin, UserMixin, db.Model):
     __tablename__ = "pairs"
 
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.Date)
+    timestamp = db.Column(db.DateTime)
     emailed = db.Column(db.Boolean, default=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
     giver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -123,7 +124,7 @@ class EmailInvite(dbMixin, db.Model):
     __tablename__ = "email_invites"
 
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.Date)
+    timestamp = db.Column(db.DateTime)
     invited_email = db.Column(db.String(120), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
 
@@ -147,11 +148,27 @@ class PasswordReset(dbMixin, db.Model):
     status = db.Column(db.Enum(ResetStatus))
 
 
+###########################################################
+#              MATERIALIZED VIEWS                         #
+###########################################################
+
+# "before_insert" HOOKS
+
 @event.listens_for(GroupsAndUsersAssociation, "before_insert", once=True)
 def create_group_admin_materialized_view(mapper, connection, target):
     all_admin_materialized_view.create()
 
+@event.listens_for(Pair, "before_insert", once=True)
+def create_group_admin_materialized_view(mapper, connection, target):
+    all_latest_pairs_view.create()
+
+# "after_insert" HOOKS
 
 @event.listens_for(GroupsAndUsersAssociation, "after_insert")
 def refresh_group_admin_materialized_view(mapper, connection, target):
     all_admin_materialized_view.refresh()
+
+
+@event.listens_for(Pair, "after_insert")
+def refresh_group_admin_materialized_view(mapper, connection, target):
+    all_latest_pairs_view.refresh()
