@@ -13,7 +13,7 @@ from models import (
 from serializers import ma
 from sqlalchemy import func, select
 from celery import Celery
-from flask_mail import Mail, Message
+from flask_mail import Mail
 from flask_login import (
     LoginManager,
     login_user,
@@ -25,7 +25,6 @@ from flask_bootstrap import Bootstrap
 from forms import (
     SignUpForm,
     LoginForm,
-    PairForm,
     ProfileEditForm,
     InviteUserToGroupForm,
     CreateGroupForm,
@@ -34,20 +33,12 @@ from forms import (
     ResetPasswordForm,
     LeaveGroupForm,
 )
-from random import choice
-from kombu.serialization import register
-from serializers import UserSchema, GroupSchema
 
 import os
 import admin
 import hashlib
 from datetime import datetime
-import requests as r
-import json
 import maya
-
-GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY")
-
 
 app = Flask(__name__)
 app.config.update(
