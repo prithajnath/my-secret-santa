@@ -287,8 +287,9 @@ def group():
 
             pair_latest_timestamp = Pair.query.with_entities(
                 func.max(Pair.timestamp)
-            ).filter_by(group_id=group_id).first()[0] or date(1970, 1, 1)
-            today = date.today()
+            ).filter_by(group_id=group_id).first()[0] or datetime(1970, 1, 1)
+            
+            today = datetime.now()
 
             delta = today - pair_latest_timestamp
             if delta.days > 1:
@@ -296,7 +297,7 @@ def group():
                     task = celery.send_task("pair.create", (group_id,))
 
                     if task.status == "PENDING":
-                        timestamp = maya.MayaDT.from_datetime(datetime.utcnow())
+                        timestamp = maya.MayaDT.from_datetime(datetime.now())
                         message = f"Pair creation has been initiated at {timestamp.__str__()}. Sit tight!"
                         return redirect(
                             url_for(".group", message=message, group_id=group_id)
