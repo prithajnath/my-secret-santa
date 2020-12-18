@@ -163,7 +163,7 @@ def create_group_admin_materialized_view(mapper, connection, target):
 
 
 @event.listens_for(Pair, "before_insert", once=True)
-def create_group_admin_materialized_view(mapper, connection, target):
+def create_all_latest_pairs_view(mapper, connection, target):
     all_latest_pairs_view.create()
 
 
@@ -176,5 +176,5 @@ def refresh_group_admin_materialized_view(mapper, connection, target):
 
 
 @event.listens_for(Pair, "after_insert")
-def refresh_group_admin_materialized_view(mapper, connection, target):
+def refresh_all_latest_pairs_view(mapper, connection, target):
     all_latest_pairs_view.refresh()
