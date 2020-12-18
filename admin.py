@@ -1,6 +1,13 @@
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
-from models import User, Group, GroupsAndUsersAssociation, Pair, EmailInvite, PasswordReset
+from models import (
+    User,
+    Group,
+    GroupsAndUsersAssociation,
+    Pair,
+    EmailInvite,
+    PasswordReset,
+)
 from flask_login import current_user
 from flask import redirect
 

@@ -54,6 +54,7 @@ class AllAdminView(MaterializedView):
 
         super().__init__("all_admin_view", conn, ddl)
 
+
 class AllLatestPairsView(MaterializedView):
     def __init__(self, conn):
         from .all_latest_pairs_view import ddl

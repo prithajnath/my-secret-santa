@@ -27,37 +27,35 @@ def reset_user_password(email):
 
         random.seed(getrandom(100))
         user = User.query.filter_by(email=email).first()
-        new_password = ''.join([chr(random.randint(50,127)) for _ in range((random.randint(14, 20)))])
+        new_password = "".join(
+            [chr(random.randint(50, 127)) for _ in range((random.randint(14, 20)))]
+        )
         user.set_password(new_password)
         user.save_to_db(db)
 
-        reset_status = PasswordReset.query.filter_by(user_id=user.id, status="resetting").first()
+        reset_status = PasswordReset.query.filter_by(
+            user_id=user.id, status="resetting"
+        ).first()
         reset_status.status = "finished"
         reset_status.finished_at = datetime.now()
         reset_status.save_to_db(db)
 
         if os.getenv("ENV") == "production":
-            sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
-            template_id = os.environ.get('SENDGRID_RESET_PASSWORD_TEMPLATE_ID')
-            data={
-                "from":{
-                    "email":"prithaj.nath@theangrydev.io"
-                },
-                "personalizations":[
+            sg = sendgrid.SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
+            template_id = os.environ.get("SENDGRID_RESET_PASSWORD_TEMPLATE_ID")
+            data = {
+                "from": {"email": "prithaj.nath@theangrydev.io"},
+                "personalizations": [
                     {
-                        "to":[
-                            {
-                            "email":email
-                            }
-                        ],
+                        "to": [{"email": email}],
                         "subject": "PASSWORD RESET FOR SECRET SANTA!!!!!",
-                        "dynamic_template_data":{
+                        "dynamic_template_data": {
                             "first_name": user.first_name,
-                            "new_password": new_password
-                        }
+                            "new_password": new_password,
+                        },
                     }
                 ],
-                "template_id": template_id
+                "template_id": template_id,
             }
 
             response = None
@@ -70,29 +68,24 @@ def reset_user_password(email):
                 print(response.body)
                 print(response.headers)
 
+
 @celery.task(name="user.invite")
 def invite_user_to_sign_up(to_email, admin_first_name, group_name):
-    sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
-    template_id = os.environ.get('SENDGRID_INVITE_TEMPLATE_ID')
-    data={
-        "from":{
-            "email":"prithaj.nath@theangrydev.io"
-        },
-        "personalizations":[
+    sg = sendgrid.SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
+    template_id = os.environ.get("SENDGRID_INVITE_TEMPLATE_ID")
+    data = {
+        "from": {"email": "prithaj.nath@theangrydev.io"},
+        "personalizations": [
             {
-                "to":[
-                    {
-                    "email":to_email
-                    }
-                ],
+                "to": [{"email": to_email}],
                 "subject": "SECRET SANTAAA!!!!!",
-                "dynamic_template_data":{
+                "dynamic_template_data": {
                     "admin_first_name": admin_first_name,
-                    "group_name": group_name
-                }
+                    "group_name": group_name,
+                },
             }
         ],
-        "template_id": template_id
+        "template_id": template_id,
     }
 
     response = None
@@ -154,29 +147,25 @@ def make_pairs(group_id):
                 new_pair.save_to_db(db)
 
                 if os.getenv("ENV") == "production":
-                    sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
-                    template_id = os.environ.get('SENDGRID_PAIR_TEMPLATE_ID')
-                    data={
-                        "from":{
-                            "email":"prithaj.nath@theangrydev.io"
-                        },
-                        "personalizations":[
+                    sg = sendgrid.SendGridAPIClient(
+                        api_key=os.environ.get("SENDGRID_API_KEY")
+                    )
+                    template_id = os.environ.get("SENDGRID_PAIR_TEMPLATE_ID")
+                    data = {
+                        "from": {"email": "prithaj.nath@theangrydev.io"},
+                        "personalizations": [
                             {
-                                "to":[
-                                    {
-                                    "email":giver.email
-                                    }
-                                ],
+                                "to": [{"email": giver.email}],
                                 "subject": "YOU ARE SOMEONE'S SECRET SANTAAA!!!!!",
-                                "dynamic_template_data":{
+                                "dynamic_template_data": {
                                     "giver": giver.first_name,
                                     "receiver": f"{receiver.first_name} {receiver.last_name}",
                                     "receiver_address": receiver.address,
-                                    "receiver_interests": receiver.hint
-                                }
+                                    "receiver_interests": receiver.hint,
+                                },
                             }
                         ],
-                        "template_id": template_id
+                        "template_id": template_id,
                     }
 
                     response = None
@@ -188,13 +177,12 @@ def make_pairs(group_id):
                         print(response.status_code)
                         print(response.body)
                         print(response.headers)
-                
+
                 new_pair.emailed = True
                 new_pair.save_to_db(db)
 
             # Refresh materialzed view manually just to be safe
             all_latest_pairs_view.refresh()
-
 
     asyncio.run(make_pairs_async(group_id))
 

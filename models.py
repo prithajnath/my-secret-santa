@@ -112,6 +112,7 @@ class Pair(dbMixin, UserMixin, db.Model):
     giver = db.relationship("User", foreign_keys=[giver_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
 
+
 class EmailInvite(dbMixin, db.Model):
     # This is for email invites to people who haven't already signed up
     # We need to remember what group they were invited to
@@ -132,6 +133,7 @@ class EmailInvite(dbMixin, db.Model):
         return self.invited_email
 
     __repr__ = __str__
+
 
 class PasswordReset(dbMixin, db.Model):
     __tablename__ = "password_resets"
@@ -154,15 +156,19 @@ class PasswordReset(dbMixin, db.Model):
 
 # "before_insert" HOOKS
 
+
 @event.listens_for(GroupsAndUsersAssociation, "before_insert", once=True)
 def create_group_admin_materialized_view(mapper, connection, target):
     all_admin_materialized_view.create()
+
 
 @event.listens_for(Pair, "before_insert", once=True)
 def create_group_admin_materialized_view(mapper, connection, target):
     all_latest_pairs_view.create()
 
+
 # "after_insert" HOOKS
+
 
 @event.listens_for(GroupsAndUsersAssociation, "after_insert")
 def refresh_group_admin_materialized_view(mapper, connection, target):

@@ -8,9 +8,10 @@ from celery import Celery
 import pytest
 import os
 
+
 @pytest.fixture
 def users():
-    users = '''
+    users = """
         leslieday
         christopherclark
         christinehartman
@@ -46,12 +47,14 @@ def users():
         victoriataylor
         richardho
         sarayoder
-    '''.split()
+    """.split()
 
     user_objs = []
     with app.app_context():
         for username in users:
-            user = User(username=username, email=f"{username}_{uuid4().__str__()[:8]}@santa.io")
+            user = User(
+                username=username, email=f"{username}_{uuid4().__str__()[:8]}@santa.io"
+            )
             user.save_to_db(db)
             user_objs.append(user)
 
@@ -63,24 +66,28 @@ def users():
         for user in user_objs:
             user.delete_from_db(db)
 
+
 @pytest.fixture
 def group(users):
     with app.app_context():
         new_group = Group(name="bricks-and-clicks")
         new_group.save_to_db(db)
         for user in users:
-            group_and_user_assoc = GroupsAndUsersAssociation(group=new_group, user=user, group_admin=choice((0,1)))
+            group_and_user_assoc = GroupsAndUsersAssociation(
+                group=new_group, user=user, group_admin=choice((0, 1))
+            )
             group_and_user_assoc.save_to_db(db)
 
         group_id = new_group.id
 
         yield new_group
-        
+
         new_group = Group.query.filter_by(id=group_id).first()
         for user_assoc in new_group.users:
             user_assoc.delete_from_db(db)
-        
+
         new_group.delete_from_db(db)
+
 
 @pytest.fixture
 def pairs(group):
@@ -90,7 +97,7 @@ def pairs(group):
 
         while task.status == "PENDING":
             sleep(5)
-        
+
         pairs = [*Pair.query.filter_by(group_id=group.id)]
         pair_ids = [pair.id for pair in pairs]
 
@@ -100,15 +107,15 @@ def pairs(group):
             pair = Pair.query.filter_by(id=pair_id).first()
             pair.delete_from_db(db)
 
+
 def test_all_members_have_been_paired(pairs):
 
     group = pairs[0].group
     assert len(pairs) == len(group.users)
+
 
 def test_no_one_is_their_own_secret_santa(pairs):
 
     for pair in pairs:
         giver, receiver = pair.giver, pair.receiver
         assert giver != receiver
-
-

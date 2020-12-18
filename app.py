@@ -8,7 +8,7 @@ from models import (
     GroupsAndUsersAssociation,
     EmailInvite,
     PasswordReset,
-    all_admin_materialized_view
+    all_admin_materialized_view,
 )
 from serializers import ma
 from sqlalchemy import func, select
@@ -32,7 +32,7 @@ from forms import (
     ChangePasswordForm,
     CreatePairsForm,
     ResetPasswordForm,
-    LeaveGroupForm
+    LeaveGroupForm,
 )
 from random import choice
 from kombu.serialization import register
@@ -85,6 +85,7 @@ def load_user(user_id):
 
 # Routes
 
+
 @app.route("/reset_password", methods=["GET", "POST"])
 def reset_password():
     form = ResetPasswordForm()
@@ -92,21 +93,31 @@ def reset_password():
         email = form.email.data
         user = User.query.filter_by(email=email).first()
         if user:
-            currently_running_reset_attempt = PasswordReset.query.with_entities(func.max(PasswordReset.started_at)).filter_by(user_id=user.id, status="resetting").first()[0]
+            currently_running_reset_attempt = (
+                PasswordReset.query.with_entities(func.max(PasswordReset.started_at))
+                .filter_by(user_id=user.id, status="resetting")
+                .first()[0]
+            )
             if currently_running_reset_attempt:
                 message = "Already processing recent password reset"
-                return render_template("reset_password.html", form=form, message=message)
-            
-            password_reset_attempts = PasswordReset.query.filter_by(user_id=user.id).all()
+                return render_template(
+                    "reset_password.html", form=form, message=message
+                )
+
+            password_reset_attempts = PasswordReset.query.filter_by(
+                user_id=user.id
+            ).all()
             if len(password_reset_attempts) < 3:
                 # GRAB ADVISORY LOCK
-                advisory_lock_key = int(hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16) % (10 ** 8) 
-                advisory_lock = db.session.execute(select([func.pg_try_advisory_lock(advisory_lock_key)])).fetchone()
+                advisory_lock_key = int(
+                    hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16
+                ) % (10 ** 8)
+                advisory_lock = db.session.execute(
+                    select([func.pg_try_advisory_lock(advisory_lock_key)])
+                ).fetchone()
                 if advisory_lock:
                     new_attempt = PasswordReset(
-                        user_id=user.id,
-                        started_at=datetime.now(),
-                        status="resetting"
+                        user_id=user.id, started_at=datetime.now(), status="resetting"
                     )
 
                     db.session.add(new_attempt)
@@ -115,46 +126,69 @@ def reset_password():
                     celery.send_task("user.reset_password", (user.email,))
 
                     # Release lock
-                    db.session.execute(select([func.pg_advisory_unlock(advisory_lock_key)]))
+                    db.session.execute(
+                        select([func.pg_advisory_unlock(advisory_lock_key)])
+                    )
 
-                    message = f"A temporary password will be sent to {user.email} shortly"
-                    return render_template("reset_password.html", form=form, message=message)
+                    message = (
+                        f"A temporary password will be sent to {user.email} shortly"
+                    )
+                    return render_template(
+                        "reset_password.html", form=form, message=message
+                    )
                 else:
                     return redirect("/reset_password")
             else:
-                last_reset_attempt_date = PasswordReset.query.with_entities(func.max(PasswordReset.started_at)).filter_by(user_id=user.id).first()[0]
+                last_reset_attempt_date = (
+                    PasswordReset.query.with_entities(
+                        func.max(PasswordReset.started_at)
+                    )
+                    .filter_by(user_id=user.id)
+                    .first()[0]
+                )
                 today = datetime.now()
 
                 if (today - last_reset_attempt_date).days < 30:
                     message = "Too many reset attempts recently. Check back again after a few days"
-                    return render_template("reset_password.html", form=form, message=message)
+                    return render_template(
+                        "reset_password.html", form=form, message=message
+                    )
                 else:
 
                     for attempt in password_reset_attempts:
                         attempt.delete_from_db(db)
 
                     # GRAB ADVISORY LOCK
-                    advisory_lock_key = int(hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16) % (10 ** 8) 
-                    advisory_lock = db.session.execute(select([func.pg_try_advisory_lock(advisory_lock_key)])).fetchone()
+                    advisory_lock_key = int(
+                        hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16
+                    ) % (10 ** 8)
+                    advisory_lock = db.session.execute(
+                        select([func.pg_try_advisory_lock(advisory_lock_key)])
+                    ).fetchone()
 
                     new_attempt = PasswordReset(
-                        user_id=user.id,
-                        started_at=datetime.now(),
-                        status="resetting"
+                        user_id=user.id, started_at=datetime.now(), status="resetting"
                     )
 
-                    new_attempt.save_to_db(db)                 
+                    new_attempt.save_to_db(db)
                     celery.send_task("user.reset_password", (user.email,))
 
                     # Release lock
-                    db.session.execute(select([func.pg_advisory_unlock(advisory_lock_key)]))
+                    db.session.execute(
+                        select([func.pg_advisory_unlock(advisory_lock_key)])
+                    )
 
-                    message = f"A temporary password will be sent to {user.email} shortly"
-                    return render_template("reset_password.html", form=form, message=message)
+                    message = (
+                        f"A temporary password will be sent to {user.email} shortly"
+                    )
+                    return render_template(
+                        "reset_password.html", form=form, message=message
+                    )
 
         message = f"No user with the email {form.email.data} was found"
         return render_template("reset_password.html", form=form, message=message)
     return render_template("reset_password.html", form=form)
+
 
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
@@ -196,6 +230,7 @@ def edit_profile():
 def profile():
     return render_template("profile.html")
 
+
 @app.route("/groups", methods=["GET", "POST"])
 @login_required
 def group():
@@ -209,16 +244,24 @@ def group():
     message = request.args.get("message")
 
     if request.method == "POST":
-        if create_group_form.submit_create_group_form.data and create_group_form.validate():
+        if (
+            create_group_form.submit_create_group_form.data
+            and create_group_form.validate()
+        ):
             group_name = create_group_form.name.data
             group = Group.query.filter_by(name=group_name).first()
             if group:
-                return redirect(url_for(".group",
-                        message=f"Group with the name {group_name} already exists"
-                    ))
+                return redirect(
+                    url_for(
+                        ".group",
+                        message=f"Group with the name {group_name} already exists",
+                    )
+                )
             new_group = Group(name=group_name)
             new_group.save_to_db(db)
-            new_group_assoc = GroupsAndUsersAssociation(group=new_group, user=current_user, group_admin=True)
+            new_group_assoc = GroupsAndUsersAssociation(
+                group=new_group, user=current_user, group_admin=True
+            )
             new_group_assoc.save_to_db(db)
 
             # TODO: @prithajnath
@@ -226,24 +269,34 @@ def group():
             all_admin_materialized_view.refresh()
 
             return redirect(url_for(".group", group_id=new_group.id))
-        
-        if leave_group_form.submit_leave_group_form.data and leave_group_form.validate():
+
+        if (
+            leave_group_form.submit_leave_group_form.data
+            and leave_group_form.validate()
+        ):
             group_name = leave_group_form.group_name.data
             print(leave_group_form)
             print(group_name)
             group = Group.query.filter_by(name=group_name).first()
 
-            group_assoc_with_user = GroupsAndUsersAssociation.query.filter_by(group=group, user=current_user).first()
+            group_assoc_with_user = GroupsAndUsersAssociation.query.filter_by(
+                group=group, user=current_user
+            ).first()
             group_assoc_with_user.delete_from_db(db)
             return redirect(url_for(".group"))
 
-        if create_pairs_form.submit_create_pairs_form.data and create_pairs_form.validate():
+        if (
+            create_pairs_form.submit_create_pairs_form.data
+            and create_pairs_form.validate()
+        ):
             print(create_pairs_form.submit_create_pairs_form.data)
             group_id = request.args.get("group_id")
             print(f"Creating pairs for {group_id}")
             group = Group.query.filter_by(id=group_id).first()
 
-            pair_latest_timestamp = Pair.query.with_entities(func.max(Pair.timestamp)).filter_by(group_id=group_id).first()[0] or date(1970,1,1)
+            pair_latest_timestamp = Pair.query.with_entities(
+                func.max(Pair.timestamp)
+            ).filter_by(group_id=group_id).first()[0] or date(1970, 1, 1)
             today = date.today()
 
             delta = today - pair_latest_timestamp
@@ -254,18 +307,26 @@ def group():
                     if task.status == "PENDING":
                         timestamp = maya.MayaDT.from_datetime(datetime.utcnow())
                         message = f"Pair creation has been initiated at {timestamp.__str__()}. Sit tight!"
-                        return redirect(url_for(".group", message=message, group_id=group_id))
+                        return redirect(
+                            url_for(".group", message=message, group_id=group_id)
+                        )
             else:
                 message = "This group is in cooldown (Pairs were created recently). Please try again in a day"
                 return redirect(url_for(".group", message=message, group_id=group_id))
 
-
-        if invite_user_to_group_form.submit_invite_form.data and invite_user_to_group_form.validate():
+        if (
+            invite_user_to_group_form.submit_invite_form.data
+            and invite_user_to_group_form.validate()
+        ):
             group_id = request.args.get("group_id")
             group = Group.query.filter_by(id=group_id).first()
-            user = User.query.filter_by(email=invite_user_to_group_form.email.data).first()
+            user = User.query.filter_by(
+                email=invite_user_to_group_form.email.data
+            ).first()
             if user:
-                new_group_assoc = GroupsAndUsersAssociation(group_id=group.id, user_id=user.id)
+                new_group_assoc = GroupsAndUsersAssociation(
+                    group_id=group.id, user_id=user.id
+                )
                 new_group_assoc.save_to_db(db)
                 return redirect(url_for(".group", group_id=group.id))
             else:
@@ -273,7 +334,7 @@ def group():
                 new_invite = EmailInvite(
                     timestamp=datetime.now(),
                     invited_email=invite_user_to_group_form.email.data,
-                    group_id=group.id
+                    group_id=group.id,
                 )
 
                 new_invite.save_to_db(db)
@@ -281,20 +342,20 @@ def group():
                 to_email = new_invite.invited_email
                 admin_first_name = current_user.first_name
                 group_name = group.name
-                task = celery.send_task("user.invite", (
-                    to_email,
-                    admin_first_name,
-                    group_name
-                    )
+                task = celery.send_task(
+                    "user.invite", (to_email, admin_first_name, group_name)
                 )
 
                 if task.status == "PENDING":
-                    return redirect(url_for(".group",
-                        message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
-                        group_id=group_id,
-                        create_pairs_form=create_pairs_form,
-                        form=invite_user_to_group_form
-                    ))
+                    return redirect(
+                        url_for(
+                            ".group",
+                            message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
+                            group_id=group_id,
+                            create_pairs_form=create_pairs_form,
+                            form=invite_user_to_group_form,
+                        )
+                    )
 
     group_id = request.args.get("group_id")
     message = request.args.get("message")
@@ -302,18 +363,28 @@ def group():
     group = Group.query.filter_by(id=group_id).first()
 
     if group:
-        if GroupsAndUsersAssociation.query.filter_by(group_id=group.id, user_id=current_user.id).first():
-            return render_template("group.html",
-            create_pairs_form=create_pairs_form,
-            invite_user_to_group_form=invite_user_to_group_form,
-            group=group,
-            message=message,
-            alert=alert
-        )
+        if GroupsAndUsersAssociation.query.filter_by(
+            group_id=group.id, user_id=current_user.id
+        ).first():
+            return render_template(
+                "group.html",
+                create_pairs_form=create_pairs_form,
+                invite_user_to_group_form=invite_user_to_group_form,
+                group=group,
+                message=message,
+                alert=alert,
+            )
 
     groups = [i.group for i in current_user.groups]
 
-    return render_template("my_groups.html", groups=groups, create_group_form=create_group_form, leave_group_form=leave_group_form, message=message, alert=alert)
+    return render_template(
+        "my_groups.html",
+        groups=groups,
+        create_group_form=create_group_form,
+        leave_group_form=leave_group_form,
+        message=message,
+        alert=alert,
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -331,9 +402,16 @@ def login():
                 else:
                     return redirect("/profile")
             else:
-                return redirect(url_for(".login", message=f"Please check your password"))
+                return redirect(
+                    url_for(".login", message=f"Please check your password")
+                )
         else:
-            return redirect(url_for(".login", message=f"Couldn't find user with username {form.username.data}"))
+            return redirect(
+                url_for(
+                    ".login",
+                    message=f"Couldn't find user with username {form.username.data}",
+                )
+            )
     message = request.args.get("message")
 
     return render_template("login.html", message=message, form=form)
@@ -370,14 +448,21 @@ def register():
 
             invites = EmailInvite.query.filter_by(invited_email=user.email)
             for invite in invites:
-                new_group_assoc = GroupsAndUsersAssociation(group_id=invite.group_id, user_id=user.id)
+                new_group_assoc = GroupsAndUsersAssociation(
+                    group_id=invite.group_id, user_id=user.id
+                )
                 new_group_assoc.save_to_db(db)
 
                 invite.delete_from_db(db)
             else:
                 return redirect("/groups")
         else:
-            return redirect(url_for(".index", alert="User with that email or username already exists"))
+            return redirect(
+                url_for(
+                    ".index", alert="User with that email or username already exists"
+                )
+            )
+
 
 @app.route("/")
 def index():
@@ -386,7 +471,6 @@ def index():
     form = SignUpForm()
     alert = request.args.get("alert")
     return render_template("index.html", alert=alert, form=form)
-
 
 
 if __name__ == "__main__":
