@@ -36,9 +36,7 @@ def reset_user_password(email):
         reset_status = PasswordReset.query.filter_by(
             user_id=user.id, status="resetting"
         ).first()
-        reset_status.status = "finished"
-        reset_status.finished_at = datetime.now()
-        reset_status.save_to_db(db)
+
 
         if os.getenv("ENV") == "production":
             sg = sendgrid.SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
@@ -64,10 +62,19 @@ def reset_user_password(email):
             except HTTPError as e:
                 print(e.to_dict)
             if response:
-                print(response.status_code)
-                print(response.body)
-                print(response.headers)
+                if response.status_code == 202:
+                    reset_status.status = "finished"
+                    reset_status.finished_at = datetime.now()
+                    reset_status.save_to_db(db)
 
+            print(response.status_code)
+            print(response.body)
+            print(response.headers)
+        else:
+            print(new_password)
+            reset_status.status = "finished"
+            reset_status.finished_at = datetime.now()
+            reset_status.save_to_db(db)           
 
 @celery.task(name="user.invite")
 def invite_user_to_sign_up(to_email, admin_first_name, group_name):

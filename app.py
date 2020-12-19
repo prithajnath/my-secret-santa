@@ -38,6 +38,7 @@ import os
 import admin
 import hashlib
 from datetime import datetime
+from sql import AdvisoryLock
 import maya
 
 app = Flask(__name__)
@@ -99,36 +100,31 @@ def reset_password():
                 user_id=user.id
             ).all()
             if len(password_reset_attempts) < 3:
-                # GRAB ADVISORY LOCK
-                advisory_lock_key = int(
-                    hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16
-                ) % (10 ** 8)
-                advisory_lock = db.session.execute(
-                    select([func.pg_try_advisory_lock(advisory_lock_key)])
-                ).fetchone()
-                if advisory_lock:
-                    new_attempt = PasswordReset(
-                        user_id=user.id, started_at=datetime.now(), status="resetting"
-                    )
+                with AdvisoryLock(engine=db.engine, lock_key=user.email).grab_lock() as locked_session:
+                    lock, session = locked_session
+                    if lock:
+                        new_attempt = PasswordReset(
+                            user_id=user.id, started_at=datetime.now(), status="resetting"
+                        )
 
-                    db.session.add(new_attempt)
-                    db.session.commit()
+                        session.add(new_attempt)
 
-                    celery.send_task("user.reset_password", (user.email,))
 
-                    # Release lock
-                    db.session.execute(
-                        select([func.pg_advisory_unlock(advisory_lock_key)])
-                    )
+                    else:
+                        message = "Too many reset attempts at the same time!"
+                        return render_template("/reset_password", form=form, message=message)
+                # Send task to celery ONLY AFTER we have
+                # 1. Committed the new row to db
+                # 2. Released the lock
 
-                    message = (
-                        f"A temporary password will be sent to {user.email} shortly"
-                    )
-                    return render_template(
-                        "reset_password.html", form=form, message=message
-                    )
-                else:
-                    return redirect("/reset_password")
+                celery.send_task("user.reset_password", (user.email,))
+
+                message = (
+                    f"A temporary password will be sent to {user.email} shortly"
+                )
+                return render_template(
+                    "reset_password.html", form=form, message=message
+                )
             else:
                 last_reset_attempt_date = (
                     PasswordReset.query.with_entities(
@@ -149,25 +145,24 @@ def reset_password():
                     for attempt in password_reset_attempts:
                         attempt.delete_from_db(db)
 
-                    # GRAB ADVISORY LOCK
-                    advisory_lock_key = int(
-                        hashlib.sha1(user.email.encode("utf-8")).hexdigest(), 16
-                    ) % (10 ** 8)
-                    advisory_lock = db.session.execute(
-                        select([func.pg_try_advisory_lock(advisory_lock_key)])
-                    ).fetchone()
+                    with AdvisoryLock(engine=db.engine, lock_key=user.email).grab_lock() as locked_session:
+                        lock, session = locked_session
+                        if lock:
+                            new_attempt = PasswordReset(
+                                user_id=user.id, started_at=datetime.now(), status="resetting"
+                            )
 
-                    new_attempt = PasswordReset(
-                        user_id=user.id, started_at=datetime.now(), status="resetting"
-                    )
+                            session.add(new_attempt)
+                        else:
+                            message = "Too many reset attempts at the same time!"
+                            return render_template("reset_password", form=form, message=message)
 
-                    new_attempt.save_to_db(db)
+
+                    # Send task to celery ONLY AFTER we have
+                    # 1. Committed the new row to db
+                    # 2. Released the lock
+                    
                     celery.send_task("user.reset_password", (user.email,))
-
-                    # Release lock
-                    db.session.execute(
-                        select([func.pg_advisory_unlock(advisory_lock_key)])
-                    )
 
                     message = (
                         f"A temporary password will be sent to {user.email} shortly"
@@ -175,7 +170,7 @@ def reset_password():
                     return render_template(
                         "reset_password.html", form=form, message=message
                     )
-
+  
         message = f"No user with the email {form.email.data} was found"
         return render_template("reset_password.html", form=form, message=message)
     return render_template("reset_password.html", form=form)
