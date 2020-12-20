@@ -5,6 +5,7 @@ from models import (
     Group,
     User,
     Pair,
+    PairCreationStatus,
     GroupsAndUsersAssociation,
     EmailInvite,
     PasswordReset,
@@ -280,15 +281,46 @@ def group():
             print(f"Creating pairs for {group_id}")
             group = Group.query.filter_by(id=group_id).first()
 
+            currently_running_creation_attempt = (
+                PairCreationStatus.query
+                .filter_by(group_id=group.id, status="creating")
+                .first()
+            )
+
+            if currently_running_creation_attempt:
+                message = "Pair creation already in progress"
+                return redirect(url_for(".group", message=message, group_id=group_id))
+
+
             pair_latest_timestamp = Pair.query.with_entities(
                 func.max(Pair.timestamp)
             ).filter_by(group_id=group_id).first()[0] or datetime(1970, 1, 1)
+
             
             today = datetime.now()
 
             delta = today - pair_latest_timestamp
             if delta.days > 1:
                 if group.is_admin(current_user) and current_user.is_authenticated:
+
+                    with AdvisoryLock(engine=db.engine, lock_key=group.name).grab_lock() as locked_session:
+                        lock, session = locked_session
+                        if lock:
+                            # NOTE: Can't pass SQLAlchemy objects like group* and current_user** here because
+                            # they are attached to a different session
+                            creation_attempt = PairCreationStatus(
+                                group_id=group.id, #*
+                                started_at=datetime.now(),
+                                initiator_id=current_user.id, #**
+                                status="creating"
+                            )
+
+                            session.add(creation_attempt)
+                        else:
+                            message="Too many attempts to create pairs at the same time!"
+                            return redirect(url_for(".group", message=message, group_id=group_id))
+
+                    # Again, only queue messages after lock has been released
                     task = celery.send_task("pair.create", (group_id,))
 
                     if task.status == "PENDING":

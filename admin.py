@@ -7,6 +7,7 @@ from models import (
     Pair,
     EmailInvite,
     PasswordReset,
+    PairCreationStatus
 )
 from flask_login import current_user
 from flask import redirect
@@ -31,3 +32,4 @@ def register(app, db):
     admin.add_view(ModelView(Pair, db.session))
     admin.add_view(ModelView(EmailInvite, db.session))
     admin.add_view(ModelView(PasswordReset, db.session))
+    admin.add_view(ModelView(PairCreationStatus, db.session))

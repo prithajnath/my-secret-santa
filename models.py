@@ -112,6 +112,23 @@ class Pair(dbMixin, UserMixin, db.Model):
     giver = db.relationship("User", foreign_keys=[giver_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
 
+class PairCreationStatus(dbMixin, db.Model):
+    __tablename__ = "pair_creation_statuses"
+
+    class Status(Enum):
+        creating = 0
+        finished = 1
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
+    group = db.relationship("Group")
+    initiator_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    initiator = db.relationship("User")
+    started_at = db.Column(db.DateTime)
+    finished_at = db.Column(db.DateTime)
+    status = db.Column(db.Enum(Status))
+
+
 
 class EmailInvite(dbMixin, db.Model):
     # This is for email invites to people who haven't already signed up

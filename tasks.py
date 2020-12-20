@@ -5,7 +5,7 @@ from celery import Celery
 from time import time
 from requests import get
 from datetime import datetime
-from models import Pair, Group, User, PasswordReset, all_latest_pairs_view
+from models import Pair, Group, User, PasswordReset, all_latest_pairs_view, PairCreationStatus
 from aiohttp import ClientSession
 from python_http_client.exceptions import HTTPError
 from app import db, app
@@ -190,6 +190,12 @@ def make_pairs(group_id):
 
             # Refresh materialzed view manually just to be safe
             all_latest_pairs_view.refresh()
+
+            # Update pair creation status
+            status = PairCreationStatus.query.filter_by(group_id=group_id, status="creating").first()
+            status.status = "finished"
+            status.finished_at = datetime.now()
+            status.save_to_db(db)
 
     asyncio.run(make_pairs_async(group_id))
 
