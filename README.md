@@ -60,6 +60,13 @@ $ sudo apt install python3.8
 
 Initially I exposed gunicorn workers to direct Internet traffic from ELB. This setup suffered multiple worker shutdowns. Most suggestions online said I needed to use a gevent or eventlet worker pool but I decided to expose an NGINX container to ELB traffic and send that traffic upstream (gunicorn workers). Almost immediately I saw drastically better response times
 
+EDIT: I migrated to an L7 load balancer so I could do HTTPS redirects, which caused some regression in the benchmark numbers so I ended up adding gevent workers because almost all of the work in this app is I/O bound
+
+Before gevent
+
+```
+loadtest  -n 1000 -c 6 -k https://www.mysecretsanta.io
+```
 
 ```
 INFO 
@@ -81,4 +88,32 @@ INFO   95%      279 ms
 INFO   99%      318 ms
 INFO  100%      1066 ms (longest request)
 
+```
+
+After gevent
+
+```
+loadtest -n 1000 -c 100 -k https://www.mysecretsanta.io
+```
+
+```
+INFO Requests: 0 (0%), requests per second: 0, mean latency: 0 ms
+INFO 
+INFO Target URL:          https://www.mysecretsanta.io
+INFO Max requests:        1000
+INFO Concurrency level:   100
+INFO Agent:               keepalive
+INFO 
+INFO Completed requests:  1000
+INFO Total errors:        0
+INFO Total time:          4.762389858000001 s
+INFO Requests per second: 210
+INFO Mean latency:        457.4 ms
+INFO 
+INFO Percentage of the requests served within a certain time
+INFO   50%      277 ms
+INFO   90%      1133 ms
+INFO   95%      1290 ms
+INFO   99%      1423 ms
+INFO  100%      1453 ms (longest request)
 ```
