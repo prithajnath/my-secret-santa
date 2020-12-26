@@ -80,6 +80,7 @@ class Group(dbMixin, UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
+    reveal_latest_pairs = db.Column(db.Boolean, default=False)
     users = db.relationship("GroupsAndUsersAssociation", backref="_group")
 
     def __init__(self, name):
@@ -98,6 +99,21 @@ class Group(dbMixin, UserMixin, db.Model):
 
     __repr__ = __str__
 
+
+class GroupPairReveals(dbMixin, db.Model):
+    __tablename__ = "group_pair_reveals"
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
+    group = db.relationship("Group")
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    user = db.relationship("User")
+    timestamp = db.Column(db.DateTime)
+
+    def __str__(self):
+        return f"{self.group.name} -> {self.timestamp}"
+    
+    __repr__ = __str__
 
 class Pair(dbMixin, UserMixin, db.Model):
     __tablename__ = "pairs"

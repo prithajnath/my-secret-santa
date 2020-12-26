@@ -7,6 +7,7 @@ from models import (
     Pair,
     EmailInvite,
     PasswordReset,
+    GroupPairReveals,
     PairCreationStatus
 )
 from flask_login import current_user
@@ -33,3 +34,4 @@ def register(app, db):
     admin.add_view(ModelView(EmailInvite, db.session))
     admin.add_view(ModelView(PasswordReset, db.session))
     admin.add_view(ModelView(PairCreationStatus, db.session))
+    admin.add_view(ModelView(GroupPairReveals, db.session))

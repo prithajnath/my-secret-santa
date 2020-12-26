@@ -1,6 +1,60 @@
 {% extends 'base.html' %}
   {% block content %}
     {% import "bootstrap/wtf.html" as wtf %}
+    <style>
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        margin-left: 15px;
+      }
+
+      .switch input { 
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+      }
+
+      input:checked + .slider {
+        background-color: #f12933;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #f12933;
+      }
+
+      input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+      }
+
+    </style>
     <div class="container">
         <br/><br/>
         <h1>
@@ -35,6 +89,15 @@
              <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H11a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 5 7h2.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM3 11.5A1.5 1.5 0 0 1 4.5 10h1A1.5 1.5 0 0 1 7 11.5v1A1.5 1.5 0 0 1 5.5 14h-1A1.5 1.5 0 0 1 3 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 9 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
             </svg>
           </a>
+
+            <label class="switch">
+              {% if group.reveal_latest_pairs %}
+                <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
+              {% else %}
+                <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
+              {% endif %}
+              <span class="slider"></span>
+            </label>
         </div>
       {% endif %}
       <div class="row">
@@ -121,9 +184,42 @@
 
 <script>
 
-  let create_pair_button = document.querySelector("#create_pair_button");
-  let create_pair_modal = document.querySelector("#CreatePairs");
-  let create_pair_form = create_pair_modal.querySelector("form");
+  const create_pair_button = document.querySelector("#create_pair_button");
+  const create_pair_modal = document.querySelector("#CreatePairs");
+  const create_pair_form = create_pair_modal.querySelector("form");
+  const csrf_token = "{{ csrf_token() }}";
+  const origin = window.location.origin;
+  const group_id = (new URL(window.location.href)).searchParams.get("group_id");
+  const user_id = "{{ current_user.id }}";
+
+  async function toggleRevealButton(target){
+    async function toggle(action){
+      let url = `${origin}/reveal_toggle`;
+      let response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          "X-CSRFToken": csrf_token,
+          "Content-Type": "application/json;charset=utf-8"
+        },
+        body: JSON.stringify({
+          user_id: user_id,
+          action: action,
+          group_id: group_id
+        })
+      });
+      let json = await response.json();
+      return json;
+    }
+
+    if(target.checked === true){
+      var response = await toggle(1);
+    }else{
+      var response = await toggle(0);
+    }
+      console.log(response);
+
+  }
+  
 
   create_pair_form
   .querySelector("textarea")

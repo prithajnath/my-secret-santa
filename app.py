@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, date
 from models import (
     db,
@@ -7,6 +8,7 @@ from models import (
     Pair,
     PairCreationStatus,
     GroupsAndUsersAssociation,
+    GroupPairReveals,
     EmailInvite,
     PasswordReset,
     all_admin_materialized_view,
@@ -59,6 +61,8 @@ app.config.update(
     )
 )
 
+csrf = CSRFProtect(app)
+
 Bootstrap(app)
 db.init_app(app)
 ma.init_app(app)
@@ -66,7 +70,7 @@ mail = Mail(app)
 admin.register(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
-
+csrf.init_app(app)
 
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
@@ -490,6 +494,34 @@ def index():
     form = SignUpForm()
     alert = request.args.get("alert")
     return render_template("index.html", alert=alert, form=form)
+
+
+# JSON endpoints
+
+@app.route("/reveal_toggle", methods=["POST"])
+def reveal_group_santas():
+    group_id = request.json.get("group_id")
+    action = request.json.get("action")
+    group = Group.query.filter_by(id=group_id).first()
+    if group:
+        with AdvisoryLock(engine=db.engine, lock_key=group.name).grab_lock() as locked_session:
+            lock, session = locked_session
+            if lock:
+                group_in_locked_session = session.query(Group).filter_by(id=group_id).first()
+                timestamp = datetime.now()
+                group_reveal_history = GroupPairReveals(
+                    group_id=group_id,
+                    user_id=current_user.id,
+                    timestamp=timestamp
+                )
+                group_in_locked_session.reveal_latest_pairs = bool(int(action))
+                session.add(group_in_locked_session)
+                session.add(group_reveal_history)
+            else:
+                return jsonify(result="too many concurrent attemps!")
+
+        return jsonify(result=action)
+    return 404
 
 
 if __name__ == "__main__":
