@@ -112,8 +112,9 @@ class GroupPairReveals(dbMixin, db.Model):
 
     def __str__(self):
         return f"{self.group.name} -> {self.timestamp}"
-    
+
     __repr__ = __str__
+
 
 class Pair(dbMixin, UserMixin, db.Model):
     __tablename__ = "pairs"
@@ -127,6 +128,7 @@ class Pair(dbMixin, UserMixin, db.Model):
     group = db.relationship("Group", backref="pairs")
     giver = db.relationship("User", foreign_keys=[giver_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
+
 
 class PairCreationStatus(dbMixin, db.Model):
     __tablename__ = "pair_creation_statuses"
@@ -143,7 +145,6 @@ class PairCreationStatus(dbMixin, db.Model):
     started_at = db.Column(db.DateTime)
     finished_at = db.Column(db.DateTime)
     status = db.Column(db.Enum(Status))
-
 
 
 class EmailInvite(dbMixin, db.Model):

@@ -9,7 +9,10 @@ else
 fi
 
 # Format the Python files you just edited!
-black $(git status | grep modified  | awk -F ':' '{ print $2  }' | egrep py$ | sed 's/ //g')
+touched_python_files=$(git status | grep modified  | awk -F ':' '{ print $2  }' | egrep py$ | sed 's/ //g')
+black $touched_python_files
+git add $touched_python_files
+
 
 # Hook to make sure requirements.txt is always in sync with Pipfile
 [ ! -z "$(diff <(pipenv lock -r) <(cat $(pwd)/requirements.txt))" ] && echo "ABORTING COMMIT :: PLEASE FIX :: requirements.txt needs to be in sync with Pipfile" && exit 1
