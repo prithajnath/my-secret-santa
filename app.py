@@ -12,6 +12,7 @@ from models import (
     EmailInvite,
     PasswordReset,
     all_admin_materialized_view,
+    all_latest_pairs_view,
 )
 from serializers import ma
 from sqlalchemy import func, select
@@ -41,6 +42,7 @@ import os
 import admin
 import hashlib
 from datetime import datetime
+from random import choices
 from sql import AdvisoryLock
 import maya
 
@@ -228,6 +230,21 @@ def edit_profile():
 @login_required
 def profile():
     return render_template("profile.html")
+
+
+@app.route("/santa", methods=["GET", "POST"])
+@login_required
+def santa():
+    all_groups = [
+        i.group
+        for i in GroupsAndUsersAssociation.query.filter_by(
+            user_id=current_user.id
+        ).all()
+    ]
+    groups_that_can_be_revealed = [
+        group for group in all_groups if group.reveal_latest_pairs
+    ]
+    return render_template("santa.html", groups=groups_that_can_be_revealed)
 
 
 @app.route("/groups", methods=["GET", "POST"])
@@ -535,6 +552,18 @@ def reveal_group_santas():
 
         return jsonify(result=action)
     return 404
+
+
+@app.route("/reveal_secret_santa", methods=["GET"])
+def reveal_secret_santa():
+    group_name = request.args.get("group_name")
+    secret_santa = all_latest_pairs_view.query.filter_by(
+        group_name=group_name, receiver_id=current_user.id
+    ).first()
+
+    group = Group.query.filter_by(name=group_name).first()
+    users = [i.user.username for i in group.users]
+    return jsonify(username=secret_santa.username, randos=choices(users, k=10))
 
 
 if __name__ == "__main__":
