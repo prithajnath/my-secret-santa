@@ -18,8 +18,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y libgconf-2-4 \
 
 COPY package.json package.json
 COPY package-lock.json package-lock.json
+COPY jest.config.js jest.config.js
 
-COPY *.js /usr/bin/santa-puppet/
+COPY tests/js/*.js /usr/bin/santa-puppet/tests/js/
 
 COPY test_end_to_end.sh test_end_to_end.sh
 
