@@ -5,7 +5,14 @@ from celery import Celery
 from time import time
 from requests import get
 from datetime import datetime
-from models import Pair, Group, User, PasswordReset, all_latest_pairs_view, PairCreationStatus
+from models import (
+    Pair,
+    Group,
+    User,
+    PasswordReset,
+    all_latest_pairs_view,
+    PairCreationStatus,
+)
 from aiohttp import ClientSession
 from python_http_client.exceptions import HTTPError
 from app import db, app
@@ -36,7 +43,6 @@ def reset_user_password(email):
         reset_status = PasswordReset.query.filter_by(
             user_id=user.id, status="resetting"
         ).first()
-
 
         if os.getenv("ENV") == "production":
             sg = sendgrid.SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
@@ -74,7 +80,8 @@ def reset_user_password(email):
             print(new_password)
             reset_status.status = "finished"
             reset_status.finished_at = datetime.now()
-            reset_status.save_to_db(db)           
+            reset_status.save_to_db(db)
+
 
 @celery.task(name="user.invite")
 def invite_user_to_sign_up(to_email, admin_first_name, group_name):
@@ -192,7 +199,9 @@ def make_pairs(group_id):
             all_latest_pairs_view.refresh()
 
             # Update pair creation status
-            status = PairCreationStatus.query.filter_by(group_id=group_id, status="creating").first()
+            status = PairCreationStatus.query.filter_by(
+                group_id=group_id, status="creating"
+            ).first()
             status.status = "finished"
             status.finished_at = datetime.now()
             status.save_to_db(db)
