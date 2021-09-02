@@ -140,8 +140,13 @@ def make_pairs(group_id):
             async with ClientSession() as session:
                 tasks = []
                 for user_association in group.users:
-                    user = user_association.user
-                    tasks.append(add_weight_to_user(user, session))
+                    if user_association.participating:
+                        user = user_association.user
+                        tasks.append(add_weight_to_user(user, session))
+                    else:
+                        print(
+                            f"Skipping user {user_association.user} because they chose not to participate"
+                        )
                 await asyncio.gather(*tasks)
 
             pairs = [user for user, _ in sorted(weighted_set, key=lambda k: k[1])]
