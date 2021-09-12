@@ -1,5 +1,7 @@
 import os
 import sendgrid
+import json
+import requests
 import asyncio
 from celery import Celery
 from time import time
@@ -45,30 +47,26 @@ def reset_user_password(email):
         ).first()
 
         if os.getenv("ENV") == "production":
-            sg = sendgrid.SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
-            template_id = os.environ.get("SENDGRID_RESET_PASSWORD_TEMPLATE_ID")
-            data = {
-                "from": {"email": "prithaj.nath@theangrydev.io"},
-                "personalizations": [
-                    {
-                        "to": [{"email": email}],
-                        "subject": "PASSWORD RESET FOR SECRET SANTA!!!!!",
-                        "dynamic_template_data": {
-                            "first_name": user.first_name,
-                            "new_password": new_password,
-                        },
-                    }
-                ],
-                "template_id": template_id,
-            }
-
             response = None
             try:
-                response = sg.client.mail.send.post(request_body=data)
+                domain_name = "www.mysecretsanta.io"
+                response = requests.post(
+                    f"https://api.mailgun.net/v3/{domain_name}/messages",
+                    auth=("api", os.getenv("MAILGUN_API_KEY")),
+                    data={
+                        "from": f"Prithaj <prithaj@{domain_name}>",
+                        "to": [email],
+                        "template": "password_reset",
+                        "h:X-Mailgun-Variables": json.dumps(
+                            {"new_password": new_password}
+                        ),
+                        "subject": "Forgot your password?",
+                    },
+                )
             except HTTPError as e:
                 print(e.to_dict)
             if response:
-                if response.status_code == 202:
+                if response.status_code in [202, 200]:
                     reset_status.status = "finished"
                     reset_status.finished_at = datetime.now()
                     reset_status.save_to_db(db)
