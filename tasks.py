@@ -65,14 +65,13 @@ def reset_user_password(email):
                 )
             except HTTPError as e:
                 print(e.to_dict)
-            if response:
-                if response.status_code in [202, 200]:
-                    reset_status.status = "finished"
-                    reset_status.finished_at = datetime.now()
-                    reset_status.save_to_db(db)
+
+            reset_status.status = "finished"
+            reset_status.finished_at = datetime.now()
+            reset_status.save_to_db(db)
 
             print(response.status_code)
-            print(response.body)
+            print(response.content)
             print(response.headers)
         else:
             print(new_password)
