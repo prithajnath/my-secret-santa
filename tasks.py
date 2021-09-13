@@ -1,16 +1,25 @@
 import os
 import sendgrid
 import json
+import sys
 import requests
 import asyncio
 from celery import Celery
 from time import time
 from requests import get
+from functools import wraps
+from typing import Tuple
+from random import uniform
+from time import sleep
+from sqlalchemy.types import Unicode
+from sqlalchemy import and_
+from requests.exceptions import HTTPError, ConnectionError, Timeout
 from datetime import datetime
 from models import (
     Pair,
     Group,
     User,
+    Task,
     PasswordReset,
     all_latest_pairs_view,
     PairCreationStatus,
@@ -28,56 +37,116 @@ celery.conf.task_routes = {
 }
 
 
-@celery.task(name="user.reset_password")
-def reset_user_password(email):
+def retry(exceptions: Tuple, max_retries: int = 3):
+    """
+    Create retry decorators by passing a list/tuple of exceptions. Can also set max number of retries
+    Implements exponential backoff with random jitter
+    Usage:
+        arithmetic_exception_retry = retry(exceptions=(FloatingPointError, OverflowError, ZeroDivisionError), max_retries=2)
+
+        @arithmetic_exception_retry
+        def _calculate_center_of_gravity(mass):
+            ...
+    """
+
+    def _retry(f):
+        @wraps(f)
+        def _f_with_retries(*args, **kwargs):
+            retries = 0
+            while True:
+                try:
+                    return f(*args, **kwargs)
+                except Exception as e:
+                    # If we get an exception that we're not sure about, we simply catch it and log the error in the db
+                    if type(e) not in exceptions:
+                        return f"""
+                        Caught an unknown exception. Refraining from retries
+                        {e}
+                        """
+                    retries += 1
+                    if retries == max_retries:
+                        return f"""
+                        Failed to execute {f.__name__} despite exponential backoff
+                        {e}
+                        """
+                    else:
+                        backoff_interval = 2 ** retries
+                        jitter = uniform(1, 2)
+                        total_backoff = backoff_interval + jitter
+                        sys.stderr.write(
+                            f"Retrying {f.__name__} #{retries}. Sleeping for {total_backoff}s"
+                        )
+                        sys.stderr.flush()
+                        sleep(total_backoff)
+
+        return _f_with_retries
+
+    return _retry
+
+
+network_exception_retry = retry(
+    exceptions=(HTTPError, ConnectionError, Timeout), max_retries=5
+)
+
+
+@network_exception_retry
+def _reset_user_password(email, user):
     with app.app_context():
         import random
         from os import getrandom
 
         random.seed(getrandom(100))
-        user = User.query.filter_by(email=email).first()
         new_password = "".join(
             [chr(random.randint(50, 127)) for _ in range((random.randint(14, 20)))]
         )
         user.set_password(new_password)
         user.save_to_db(db)
-
-        reset_status = PasswordReset.query.filter_by(
-            user_id=user.id, status="resetting"
-        ).first()
-
         if os.getenv("ENV") == "production":
-            response = None
-            try:
-                domain_name = "www.mysecretsanta.io"
-                response = requests.post(
-                    f"https://api.mailgun.net/v3/{domain_name}/messages",
-                    auth=("api", os.getenv("MAILGUN_API_KEY")),
-                    data={
-                        "from": f"Prithaj <prithaj@{domain_name}>",
-                        "to": [email],
-                        "template": "password_reset",
-                        "h:X-Mailgun-Variables": json.dumps(
-                            {"new_password": new_password}
-                        ),
-                        "subject": "Forgot your password?",
-                    },
-                )
-            except HTTPError as e:
-                print(e.to_dict)
-
-            reset_status.status = "finished"
-            reset_status.finished_at = datetime.now()
-            reset_status.save_to_db(db)
+            domain_name = "www.mysecretsanta.io"
+            response = requests.post(
+                f"https://api.mailgun.net/v3/{domain_name}/messages",
+                auth=("api", os.getenv("MAILGUN_API_KEY")),
+                data={
+                    "from": f"Prithaj <prithaj@{domain_name}>",
+                    "to": [email],
+                    "template": "password_reset",
+                    "h:X-Mailgun-Variables": json.dumps({"new_password": new_password}),
+                    "subject": "Forgot your password?",
+                },
+            )
 
             print(response.status_code)
             print(response.content)
             print(response.headers)
         else:
             print(new_password)
-            reset_status.status = "finished"
-            reset_status.finished_at = datetime.now()
-            reset_status.save_to_db(db)
+
+
+@celery.task(name="user.reset_password")
+def reset_user_password(email):
+    with app.app_context():
+        user = User.query.filter_by(email=email).first()
+        task = (
+            Task.query.filter(
+                and_(
+                    Task.payload["email"].as_string() == email,
+                    Task.payload["name"].as_string() == "reset_user_password",
+                    Task.status == "starting",
+                )
+            )
+            .order_by(Task.started_at.desc())
+            .first()
+        )
+
+        task.status = "processing"
+        task.save_to_db(db)
+
+        result = _reset_user_password(email, user)
+
+        task.status = "finished"
+        task.error = result
+        task.finished_at = datetime.now()
+        task.save_to_db(db)
 
 
 @celery.task(name="user.invite")

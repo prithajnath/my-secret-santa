@@ -5,6 +5,7 @@ from models import (
     Group,
     GroupsAndUsersAssociation,
     Pair,
+    Task,
     EmailInvite,
     PasswordReset,
     GroupPairReveals,
@@ -31,6 +32,7 @@ def register(app, db):
     admin.add_view(ModelView(GroupsAndUsersAssociation, db.session))
     admin.add_view(ModelView(Group, db.session))
     admin.add_view(ModelView(Pair, db.session))
+    admin.add_view(ModelView(Task, db.session))
     admin.add_view(ModelView(EmailInvite, db.session))
     admin.add_view(ModelView(PasswordReset, db.session))
     admin.add_view(ModelView(PairCreationStatus, db.session))

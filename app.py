@@ -6,6 +6,7 @@ from models import (
     Group,
     User,
     Pair,
+    Task,
     PairCreationStatus,
     GroupsAndUsersAssociation,
     GroupPairReveals,
@@ -15,7 +16,8 @@ from models import (
     all_latest_pairs_view,
 )
 from serializers import ma
-from sqlalchemy import func, select
+from sqlalchemy import func, select, and_, JSON, cast
+from sqlalchemy.types import Unicode
 from celery import Celery
 from flask_mail import Mail
 from flask_login import (
@@ -92,19 +94,26 @@ def reset_password():
         email = form.email.data
         user = User.query.filter_by(email=email).first()
         if user:
-            currently_running_reset_attempt = (
-                PasswordReset.query.with_entities(func.max(PasswordReset.started_at))
-                .filter_by(user_id=user.id, status="resetting")
-                .first()[0]
-            )
+            currently_running_reset_attempt = Task.query.filter(
+                and_(
+                    Task.payload["email"].as_string() == user.email,
+                    Task.payload["name"].as_string() == "reset_user_password",
+                    Task.status == "starting",
+                )
+            ).first()
+
             if currently_running_reset_attempt:
                 message = "Already processing recent password reset"
                 return render_template(
                     "reset_password.html", form=form, message=message
                 )
 
-            password_reset_attempts = PasswordReset.query.filter_by(
-                user_id=user.id
+            password_reset_attempts = Task.query.filter(
+                and_(
+                    Task.payload["email"].as_string() == user.email,
+                    Task.payload["name"].as_string() == "reset_user_password",
+                    Task.status == "finished",
+                )
             ).all()
             if len(password_reset_attempts) < 3:
                 with AdvisoryLock(
@@ -112,12 +121,14 @@ def reset_password():
                 ).grab_lock() as locked_session:
                     lock, session = locked_session
                     if lock:
-                        new_attempt = PasswordReset(
-                            user_id=user.id,
+                        new_attempt = Task(
+                            payload={
+                                "name": "reset_user_password",
+                                "email": user.email,
+                            },
                             started_at=datetime.now(),
-                            status="resetting",
+                            status="starting",
                         )
-
                         session.add(new_attempt)
 
                     else:
@@ -137,10 +148,14 @@ def reset_password():
                 )
             else:
                 last_reset_attempt_date = (
-                    PasswordReset.query.with_entities(
-                        func.max(PasswordReset.started_at)
+                    Task.query.with_entities(func.max(Task.started_at))
+                    .filter(
+                        and_(
+                            Task.payload["email"].as_string() == user.email,
+                            Task.payload["name"].as_string() == "reset_user_password",
+                            Task.status == "finished",
+                        )
                     )
-                    .filter_by(user_id=user.id)
                     .first()[0]
                 )
                 today = datetime.now()
@@ -160,10 +175,14 @@ def reset_password():
                     ).grab_lock() as locked_session:
                         lock, session = locked_session
                         if lock:
-                            new_attempt = PasswordReset(
-                                user_id=user.id,
+
+                            new_attempt = Task(
+                                payload={
+                                    "name": "reset_user_password",
+                                    "email": user.email,
+                                },
                                 started_at=datetime.now(),
-                                status="resetting",
+                                status="starting",
                             )
 
                             session.add(new_attempt)

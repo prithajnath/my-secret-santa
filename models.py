@@ -1,3 +1,6 @@
+import json
+
+
 from flask_sqlalchemy import SQLAlchemy, event
 from passlib.hash import pbkdf2_sha256
 from enum import Enum
@@ -145,6 +148,25 @@ class PairCreationStatus(dbMixin, db.Model):
     started_at = db.Column(db.DateTime)
     finished_at = db.Column(db.DateTime)
     status = db.Column(db.Enum(Status))
+
+
+class Task(dbMixin, db.Model):
+    __tablename__ = "tasks"
+
+    class TaskStatus(Enum):
+        starting = 0
+        processing = 1
+        finished = 2
+
+    id = db.Column(db.Integer, primary_key=True)
+    payload = db.Column(db.JSON)
+    error = db.Column(db.Text)
+    started_at = db.Column(db.DateTime)
+    finished_at = db.Column(db.DateTime)
+    status = db.Column(db.Enum(TaskStatus))
+
+    def __str__(self):
+        return self.payload.fetch("name", "unnamed_task")
 
 
 class EmailInvite(dbMixin, db.Model):
