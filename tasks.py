@@ -8,7 +8,7 @@ from celery import Celery
 from time import time
 from requests import get
 from functools import wraps
-from typing import Tuple
+from typing import Tuple, Optional, Callable, Any, Union
 from random import uniform
 from time import sleep
 from sqlalchemy.types import Unicode
@@ -25,7 +25,6 @@ from models import (
     PairCreationStatus,
 )
 from aiohttp import ClientSession
-from python_http_client.exceptions import HTTPError
 from app import db, app
 
 
@@ -35,6 +34,17 @@ celery.conf.task_routes = {
     "pair.*": {"queue": "pairs_queue"},
     "user.*": {"queue": "users_queue"},
 }
+
+# This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
+# in the retry process
+class RetryException:
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+    __repr__ = __str__
 
 
 def retry(exceptions: Tuple, max_retries: int = 3):
@@ -59,16 +69,20 @@ def retry(exceptions: Tuple, max_retries: int = 3):
                 except Exception as e:
                     # If we get an exception that we're not sure about, we simply catch it and log the error in the db
                     if type(e) not in exceptions:
-                        return f"""
+                        return RetryException(
+                            f"""
                         Caught an unknown exception. Refraining from retries
                         {e}
                         """
+                        )
                     retries += 1
                     if retries == max_retries:
-                        return f"""
+                        return RetryException(
+                            f"""
                         Failed to execute {f.__name__} despite exponential backoff
                         {e}
                         """
+                        )
                     else:
                         backoff_interval = 2 ** retries
                         jitter = uniform(1, 2)
@@ -102,7 +116,7 @@ def _reset_user_password(email, user):
         user.set_password(new_password)
         user.save_to_db(db)
         if os.getenv("ENV") == "production":
-            domain_name = "www.mysecretsanta.io"
+            domain_name = "mysecretsanta.io"
             response = requests.post(
                 f"https://api.mailgun.net/v3/{domain_name}/messages",
                 auth=("api", os.getenv("MAILGUN_API_KEY")),
@@ -119,6 +133,8 @@ def _reset_user_password(email, user):
             print(response.content)
             print(response.headers)
         else:
+            # This is just to simulate network errors in a dev environemnt
+            requests.get("https://www.mysecretsanta.io/math")
             print(new_password)
 
 
@@ -144,7 +160,7 @@ def reset_user_password(email):
         result = _reset_user_password(email, user)
 
         task.status = "finished"
-        task.error = result
+        task.error = str(result)
         task.finished_at = datetime.now()
         task.save_to_db(db)
 
