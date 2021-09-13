@@ -97,7 +97,7 @@ def reset_password():
             currently_running_reset_attempt = Task.query.filter(
                 and_(
                     Task.payload["email"].as_string() == user.email,
-                    Task.payload["name"].as_string() == "reset_user_password",
+                    Task.name == "reset_user_password",
                     Task.status == "starting",
                 )
             ).first()
@@ -111,7 +111,7 @@ def reset_password():
             password_reset_attempts = Task.query.filter(
                 and_(
                     Task.payload["email"].as_string() == user.email,
-                    Task.payload["name"].as_string() == "reset_user_password",
+                    Task.name == "reset_user_password",
                     Task.status == "finished",
                 )
             ).all()
@@ -122,8 +122,8 @@ def reset_password():
                     lock, session = locked_session
                     if lock:
                         new_attempt = Task(
+                            name="reset_user_password",
                             payload={
-                                "name": "reset_user_password",
                                 "email": user.email,
                             },
                             started_at=datetime.now(),
@@ -152,7 +152,7 @@ def reset_password():
                     .filter(
                         and_(
                             Task.payload["email"].as_string() == user.email,
-                            Task.payload["name"].as_string() == "reset_user_password",
+                            Task.name == "reset_user_password",
                             Task.status == "finished",
                         )
                     )

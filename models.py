@@ -159,6 +159,7 @@ class Task(dbMixin, db.Model):
         finished = 2
 
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), default="unnamed_task")
     payload = db.Column(db.JSON)
     error = db.Column(db.Text)
     started_at = db.Column(db.DateTime)
@@ -166,7 +167,7 @@ class Task(dbMixin, db.Model):
     status = db.Column(db.Enum(TaskStatus))
 
     def __str__(self):
-        return self.payload.fetch("name", "unnamed_task")
+        return self.name
 
 
 class EmailInvite(dbMixin, db.Model):

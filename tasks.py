@@ -130,7 +130,7 @@ def reset_user_password(email):
             Task.query.filter(
                 and_(
                     Task.payload["email"].as_string() == email,
-                    Task.payload["name"].as_string() == "reset_user_password",
+                    Task.name == "reset_user_password",
                     Task.status == "starting",
                 )
             )
