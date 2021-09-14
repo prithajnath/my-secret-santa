@@ -354,11 +354,14 @@ def group():
                         if lock:
                             # NOTE: Can't pass SQLAlchemy objects like group* and current_user** here because
                             # they are attached to a different session
-                            creation_attempt = PairCreationStatus(
-                                group_id=group.id,  # *
+                            creation_attempt = Task(
                                 started_at=datetime.now(),
-                                initiator_id=current_user.id,  # **
-                                status="creating",
+                                name="create_pairs",
+                                payload={
+                                    "group_id": group.id,
+                                    "initiator_id": current_user.id,
+                                },
+                                status="starting",
                             )
 
                             session.add(creation_attempt)
@@ -371,7 +374,7 @@ def group():
                             )
 
                     # Again, only queue messages after lock has been released
-                    task = celery.send_task("pair.create", (group_id,))
+                    task = celery.send_task("pair.create_pairs", (group_id,))
 
                     if task.status == "PENDING":
                         timestamp = maya.MayaDT.from_datetime(datetime.now())
