@@ -54,7 +54,7 @@ services:
   secret-santa-postgres:
     volumes:
       - /home/ubuntu/.local/volumes/my-secret-santa:/var/lib/postgresql/data
-    image: postgres
+    image: postgres:13
     restart: always
     environment:
         - POSTGRES_HOST_AUTH_METHOD=trust 

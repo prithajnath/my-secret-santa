@@ -54,7 +54,7 @@ services:
     container_name: dev-secret-santa-postgres
     networks:
       - santa_test_network
-    image: postgres
+    image: postgres:13
     environment:
         - POSTGRES_HOST_AUTH_METHOD=trust
 
