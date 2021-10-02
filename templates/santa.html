@@ -1,107 +1,159 @@
 {% extends 'base.html' %}
-    {% block content %}
-    <div class="container">
-      <div class="row">
-          {% if groups %}
-        <div class="col-sm">
-          <br/><br/>
-            {% for group in groups %}
+{% block content %}
+<br /><br />
+<div class="container">
+  {% if secret_santees %}
+  <h1 style="font-family: 'Rubik Mono One', sans-serif;"><strong>Your santees</strong></h1>
 
-          <div class="santa-card card" style="width: 18rem;">
-            <div class="card-body">
-              <h5 class="card-title">
-                <strong>{{ group }}</strong>
-              </h5>
-              <p class="santa-username"></p>
-            </div>
-              <div style="display: flex;" >
-                  <button style="margin: 0px 0px 5px 5px;" onclick="revealSecretSanta(this)" class="santa-button">Reveal</button> 
-               </div>
+  <p>These are the people whom YOU're supposed to send gifts to.You can view their profiles to get a sense of what
+    they like or message them to get to know them better. Don't
+    worry you'll be anonymous to them!</p>
+
+  <br /><br />
+  <div class="row">
+
+    {% for santee in secret_santees %}
+
+    <div class="col-sm">
+      <div class="santa-card card" style="width: 18rem; margin-top: 5px;">
+        <div class="card-body">
+          <h5 class="card-title">
+            <strong>{{ santee.group_name }}</strong>
+          </h5>
+          <p class="santa-username"></p>
         </div>
-
-        <br/><br/>
-
-        {% endfor %}
-
-        <div class="modal fade" id="RevealSecretSanta" tabindex="-1" role="dialog" aria-labelledby="RevealSecretSantaLabel" aria-hidden="true">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="RevealSecretSantaLabel"></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body text-center">
-                <p><strong class="santa-username"></strong></p>
-                <img style="width: 95%;" src="https://media.giphy.com/media/5Y2bU7FqLOuzK/giphy.gif"/>
-              </div>
-            </div>
-          </div>
+        <div style="display: flex;">
+          <button class="santa-button" style="margin: 5px;"><a href="/profile/{{ santee.receiver_username }}">View
+              profile</a></button>
+          <button class="santa-button" style="margin: 5px;">Message</button>
+          <br />
         </div>
+      </div>
 
+    </div>
+    <br /><br />
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if groups %}
+  <br /><br />
+  <h1 style="font-family: 'Rubik Mono One', sans-serif;"><strong>Your santas</strong></h1>
+  <p>These are the people who are supposed to send you gifts</p>
+  <p><strong>WARNING:</strong> If you see the "Reveal" button enabled for a certain group, that means a group admin has
+    enabled latest pairs to be revealed. Don't click the "Reveal" button if you don't want to know your secret santa's
+    identity yet!(for
+    whatever group)
+  </p>
+  <br /><br />
+  <div class="row">
+
+
+    {% for group in groups %}
+
+    <div class="col-sm">
+      <div class="santa-card card" style="width: 18rem; margin-top: 5px;">
+        <div class="card-body">
+          <h5 class="card-title">
+            <strong>{{ group }}</strong>
+          </h5>
+          <p class="santa-username"></p>
+        </div>
+        <div style="display: flex;">
+
+          <button class="santa-button" style="margin: 5px;">Message</button>
+          {% if group.reveal_latest_pairs %}
+          <button style="margin: 5px;" onclick="revealSecretSanta(this)" class="santa-button">Reveal</button>
           {% else %}
-          <div class="col-md-8 offset-md-2 text-center">
-            <img src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1608981253/Gitfang_1_s3vcjy.png" class="img-fluid"/>
-            <br/>
-            <h2>nothing to see here...</h2>
-          </div>
+          <button style="margin: 5px;" class="santa-button" disabled>Reveal</button>
           {% endif %}
+        </div>
+      </div>
     </div>
+    <br /><br />
+
+    {% endfor %}
+
+    <div class="modal fade" id="RevealSecretSanta" tabindex="-1" role="dialog" aria-labelledby="RevealSecretSantaLabel"
+      aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="RevealSecretSantaLabel"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body text-center">
+            <p><strong class="santa-username"></strong></p>
+            <img style="width: 95%;" src="https://media.giphy.com/media/5Y2bU7FqLOuzK/giphy.gif" />
+          </div>
+        </div>
+      </div>
     </div>
 
+    {% else %}
+    <div class="col-md-8 offset-md-2 text-center">
+      <img src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1608981253/Gitfang_1_s3vcjy.png" class="img-fluid" />
+      <br />
+      <h2>nothing to see here...</h2>
+    </div>
+    {% endif %}
+  </div>
 
 
-    <script>
+</div>
 
-      function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+<br /><br />
+
+<script>
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function revealSecretSanta(target) {
+    const csrf_token = "{{ csrf_token() }}";
+    const modal = document.querySelector(".modal");
+    const origin = window.location.origin;
+    const username = target
+      .parentElement
+      .parentElement
+      .querySelector("p.santa-username");
+
+    const group_name = target
+      .parentElement
+      .parentElement
+      .querySelector("h5")
+      .innerText;
+
+    const url = encodeURI(`${origin}/reveal_secret_santa?group_name=${group_name}`);
+    const response = await fetch(url, {
+      headers: {
+        "X-CSRFToken": csrf_token,
       }
+    });
+    const json = await response.json();
+    const santa = json["username"]
 
-      async function revealSecretSanta(target){
-        const csrf_token = "{{ csrf_token() }}";
-        const modal = document.querySelector(".modal");
-        const origin = window.location.origin;
-        const username = target
-        .parentElement
-        .parentElement
-        .querySelector("p.santa-username");
+    // username.innerText = `@${santa}`;
 
-        const group_name = target
-        .parentElement
-        .parentElement
-        .querySelector("h5")
-        .innerText;
+    const modal_h5 = modal.querySelector("h5");
+    modal_h5.innerText = `Your secret santa for ${group_name} is ...`;
 
-        const url = encodeURI(`${origin}/reveal_secret_santa?group_name=${group_name}`);
-        const response = await fetch(url, {
-          headers: {
-            "X-CSRFToken": csrf_token,
-          }
-        });
-        const json = await response.json();
-        const santa = json["username"]
+    const modal_body = modal.querySelector(".modal-body");
+    // modal_body.innerText = santa;
+    $(modal).modal();
 
-        // username.innerText = `@${santa}`;
 
-        const modal_h5 = modal.querySelector("h5");
-        modal_h5.innerText = `Your secret santa for ${group_name} is ...`;
+    for (let i = 0; i < 200; i++) {
+      let idx = Math.floor(Math.random() * json["randos"].length);
+      modal_body.querySelector(".santa-username").innerText = `@${json["randos"][idx]}`;
+      await sleep(20);
+    }
 
-        const modal_body = modal.querySelector(".modal-body");
-        // modal_body.innerText = santa;
-        $(modal).modal();
+    modal_body.querySelector(".santa-username").innerText = `@${santa}`;
 
-        
-        for(let i=0; i < 200; i++){
-          let idx = Math.floor(Math.random() * json["randos"].length);
-          modal_body.querySelector(".santa-username").innerText = `@${json["randos"][idx]}`;
-          await sleep(20);
-        }
-
-        modal_body.querySelector(".santa-username").innerText = `@${santa}`;
-
-      }
-    </script>
-    {% endblock %}
-
-</html>
+  }
+</script>
+{% endblock %}

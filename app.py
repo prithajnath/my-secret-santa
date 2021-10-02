@@ -245,9 +245,13 @@ def edit_profile():
     return render_template("edit_profile.html", form=form, hint=hint, address=address)
 
 
+@app.route("/profile/<username>", methods=["GET"])
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
-def profile():
+def profile(username=None):
+    if username:
+        user = User.query.filter_by(username=username).first()
+        return render_template("profile.html", user=user)
     return render_template("profile.html")
 
 
@@ -260,10 +264,13 @@ def santa():
             user_id=current_user.id
         ).all()
     ]
-    groups_that_can_be_revealed = [
-        group for group in all_groups if group.reveal_latest_pairs
-    ]
-    return render_template("santa.html", groups=groups_that_can_be_revealed)
+    secret_santees = all_latest_pairs_view.query.filter_by(
+        giver_username=current_user.username
+    ).all()
+
+    return render_template(
+        "santa.html", groups=all_groups, secret_santees=secret_santees
+    )
 
 
 @app.route("/groups", methods=["GET", "POST"])
@@ -580,12 +587,12 @@ def reveal_group_santas():
 def reveal_secret_santa():
     group_name = request.args.get("group_name")
     secret_santa = all_latest_pairs_view.query.filter_by(
-        group_name=group_name, receiver_id=current_user.id
+        group_name=group_name, receiver_username=current_user.username
     ).first()
 
     group = Group.query.filter_by(name=group_name).first()
     users = [i.user.username for i in group.users]
-    return jsonify(username=secret_santa.username, randos=choices(users, k=10))
+    return jsonify(username=secret_santa.giver_username, randos=choices(users, k=10))
 
 
 if __name__ == "__main__":

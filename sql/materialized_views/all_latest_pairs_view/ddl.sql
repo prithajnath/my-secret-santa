@@ -9,7 +9,8 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
             )
             SELECT latest_timestamps.group_id,
                     giver_id,
-                    receiver_id
+                    receiver_id,
+                    max_timestamp
             FROM latest_timestamps
             LEFT JOIN pairs 
                 ON 
@@ -20,19 +21,26 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
 
     SELECT
         uuid_generate_v4() AS id,
-        username,
-        receiver_id,
+        givers.username AS giver_username,
+        receivers.username AS receiver_username,
+        max_timestamp AS created_at,
         name as group_name
     FROM
         all_latest_pairs
     LEFT JOIN
-        users
+        users AS givers
             ON
-                users.id = all_latest_pairs.giver_id
+                givers.id = all_latest_pairs.giver_id
     LEFT JOIN
         groups
             ON
                 groups.id = all_latest_pairs.group_id
+    LEFT JOIN
+        users AS receivers
+            ON
+                receivers.id = all_latest_pairs.receiver_id
+
+
 );
 
 CREATE UNIQUE INDEX ON all_latest_pairs_view (id);
