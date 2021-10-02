@@ -251,7 +251,18 @@ def edit_profile():
 def profile(username=None):
     if username:
         user = User.query.filter_by(username=username).first()
-        return render_template("profile.html", user=user)
+        # Only reveal profile info if the current user is the secret santa of this username in some group
+        secret_santees = all_latest_pairs_view.query.filter_by(
+            giver_username=current_user.username
+        ).all()
+
+        if username in [row.receiver_username for row in secret_santees]:
+            return render_template("profile.html", user=user)
+        else:
+            return render_template(
+                "profile.html",
+                not_allowed="Oops, you're not allowed to view this profile!",
+            )
     return render_template("profile.html")
 
 

@@ -1,5 +1,12 @@
 {% extends 'base.html' %}
 {% block content %}
+
+{% if not_allowed %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  {{ not_allowed }}
+</div>
+{% else %}
+
 {% if user %}
 <div class="container">
   <div class="row">
@@ -29,6 +36,8 @@
   </div>
   <a href="/edit_profile"><button class="santa-button">Edit</button></a>
 </div>
+{% endif %}
+
 {% endif %}
 {% endblock %}
 
