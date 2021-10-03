@@ -1,133 +1,183 @@
 {% extends 'base.html' %}
-  {% block content %}
-    {% import "bootstrap/wtf.html" as wtf %}
-    <style>
-      .switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-        margin-left: 15px;
-      }
+{% block content %}
+{% import "bootstrap/wtf.html" as wtf %}
+<style>
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    margin-left: 15px;
+  }
 
-      .switch input { 
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        -webkit-transition: .4s;
-        transition: .4s;
-      }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+  }
 
-      .slider:before {
-        position: absolute;
-        content: "";
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        -webkit-transition: .4s;
-        transition: .4s;
-      }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+  }
 
-      input:checked + .slider {
-        background-color: #f12933;
-      }
+  input:checked+.slider {
+    background-color: #f12933;
+  }
 
-      input:focus + .slider {
-        box-shadow: 0 0 1px #f12933;
-      }
+  input:focus+.slider {
+    box-shadow: 0 0 1px #f12933;
+  }
 
-      input:checked + .slider:before {
-        -webkit-transform: translateX(26px);
-        -ms-transform: translateX(26px);
-        transform: translateX(26px);
-      }
+  input:checked+.slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+  }
+</style>
+<div class="container">
+  <br /><br />
+  <h1>
+    <strong>{{ group.name }}</strong>
+  </h1>
+  {% if message %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  {% endif %}
+  <br /><br />
 
-    </style>
-    <div class="container">
-        <br/><br/>
-        <h1>
-          <strong>{{ group.name }}</strong>
-        </h1>
-        {% if message %}
-          <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ message }}
-             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-             </button>
-          </div>
-        {% endif %}
-        <br/><br/>
+  {% if group.is_admin(current_user) %}
+  <div style="display: flex;">
+    <a data-toggle="modal" data-target="#inviteUserToGroup"><svg width="2em" height="2em" viewBox="0 0 16 16"
+        class="bi bi-person-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd"
+          d="M8 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm6 5c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10zM13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z" />
+      </svg></a>
+    <br /><br />
 
-        {% if group.is_admin(current_user) %}
-        <div style="display: flex;">
-          <a data-toggle="modal" data-target="#inviteUserToGroup"><svg width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-person-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" d="M8 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm6 5c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10zM13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
-          </svg></a>
-            <br/><br/>
+    <a>
+      <svg style="margin-left: 15px;" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-trash"
+        fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+        <path fill-rule="evenodd"
+          d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+      </svg>
+    </a>
 
-          <a>
-            <svg style="margin-left: 15px;" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-trash" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-            </svg>
-          </a>
+    <a>
+      <svg data-toggle="modal" data-target="#CreatePairs" style="margin-left: 15px;" width="2em" height="2em"
+        viewBox="0 0 16 16" class="bi bi-diagram-2" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd"
+          d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H11a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 5 7h2.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM3 11.5A1.5 1.5 0 0 1 4.5 10h1A1.5 1.5 0 0 1 7 11.5v1A1.5 1.5 0 0 1 5.5 14h-1A1.5 1.5 0 0 1 3 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 9 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z" />
+      </svg>
+    </a>
 
-          <a>
-            <svg  data-toggle="modal" data-target="#CreatePairs" style="margin-left: 15px;" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-diagram-2" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-             <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H11a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 5 7h2.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM3 11.5A1.5 1.5 0 0 1 4.5 10h1A1.5 1.5 0 0 1 7 11.5v1A1.5 1.5 0 0 1 5.5 14h-1A1.5 1.5 0 0 1 3 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 9 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
-            </svg>
-          </a>
-
-            <label class="switch">
-              {% if group.reveal_latest_pairs %}
-                <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
-              {% else %}
-                <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
-              {% endif %}
-              <span class="slider"></span>
-            </label>
-        </div>
+    <label class="switch">
+      {% if group.reveal_latest_pairs %}
+      <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
+      {% else %}
+      <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
       {% endif %}
-      <div class="row">
+      <span class="slider"></span>
+    </label>
+  </div>
+  {% endif %}
+  <div class="row">
 
-          <br/><br/>
-        {% for i in group.users %}
-        <div class="col-sm">
-        <div class="santa-card card" style="width: 18rem;">
-          <img class="card-img-top" src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1566878823/trexbat_tcsvbd.png" alt="Card image cap">
-            <div class="card-body">
-            <h5 class="card-title">
-          {% if group.is_admin(i.user) %}
-              <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-shield-shaded" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" d="M5.443 1.991a60.17 60.17 0 0 0-2.725.802.454.454 0 0 0-.315.366C1.87 7.056 3.1 9.9 4.567 11.773c.736.94 1.533 1.636 2.197 2.093.333.228.626.394.857.5.116.053.21.089.282.11A.73.73 0 0 0 8 14.5c.007-.001.038-.005.097-.023.072-.022.166-.058.282-.111.23-.106.525-.272.857-.5a10.197 10.197 0 0 0 2.197-2.093C12.9 9.9 14.13 7.056 13.597 3.159a.454.454 0 0 0-.315-.366c-.626-.2-1.682-.526-2.725-.802C9.491 1.71 8.51 1.5 8 1.5c-.51 0-1.49.21-2.557.491zm-.256-.966C6.23.749 7.337.5 8 .5c.662 0 1.77.249 2.813.525a61.09 61.09 0 0 1 2.772.815c.528.168.926.623 1.003 1.184.573 4.197-.756 7.307-2.367 9.365a11.191 11.191 0 0 1-2.418 2.3 6.942 6.942 0 0 1-1.007.586c-.27.124-.558.225-.796.225s-.526-.101-.796-.225a6.908 6.908 0 0 1-1.007-.586 11.192 11.192 0 0 1-2.417-2.3C2.167 10.331.839 7.221 1.412 3.024A1.454 1.454 0 0 1 2.415 1.84a61.11 61.11 0 0 1 2.772-.815z"/>
-                <path d="M8 2.25c.909 0 3.188.685 4.254 1.022a.94.94 0 0 1 .656.773c.814 6.424-4.13 9.452-4.91 9.452V2.25z"/>
-              </svg>
-              
-          {% endif %}
-              <strong>@{{ i.user.username }}</strong></h5>
-            <p class="card-text">hey hey ho ho.</p>
+    <br /><br />
+    {% for i in group.users %}
+    <div class="col-sm">
+      <div class="santa-card card" style="width: 18rem;">
+        <img class="card-img-top" src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1566878823/trexbat_tcsvbd.png"
+          alt="Card image cap">
+        <div class="card-body">
+          <h5 class="card-title">
+            {% if group.is_admin(i.user) %}
+            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-shield-shaded" fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd"
+                d="M5.443 1.991a60.17 60.17 0 0 0-2.725.802.454.454 0 0 0-.315.366C1.87 7.056 3.1 9.9 4.567 11.773c.736.94 1.533 1.636 2.197 2.093.333.228.626.394.857.5.116.053.21.089.282.11A.73.73 0 0 0 8 14.5c.007-.001.038-.005.097-.023.072-.022.166-.058.282-.111.23-.106.525-.272.857-.5a10.197 10.197 0 0 0 2.197-2.093C12.9 9.9 14.13 7.056 13.597 3.159a.454.454 0 0 0-.315-.366c-.626-.2-1.682-.526-2.725-.802C9.491 1.71 8.51 1.5 8 1.5c-.51 0-1.49.21-2.557.491zm-.256-.966C6.23.749 7.337.5 8 .5c.662 0 1.77.249 2.813.525a61.09 61.09 0 0 1 2.772.815c.528.168.926.623 1.003 1.184.573 4.197-.756 7.307-2.367 9.365a11.191 11.191 0 0 1-2.418 2.3 6.942 6.942 0 0 1-1.007.586c-.27.124-.558.225-.796.225s-.526-.101-.796-.225a6.908 6.908 0 0 1-1.007-.586 11.192 11.192 0 0 1-2.417-2.3C2.167 10.331.839 7.221 1.412 3.024A1.454 1.454 0 0 1 2.415 1.84a61.11 61.11 0 0 1 2.772-.815z" />
+              <path
+                d="M8 2.25c.909 0 3.188.685 4.254 1.022a.94.94 0 0 1 .656.773c.814 6.424-4.13 9.452-4.91 9.452V2.25z" />
+            </svg>
+
+            {% endif %}
+            <strong>@{{ i.user.username }}</strong>
+          </h5>
+          <p class="card-text">hey hey ho ho.</p>
           {% if group.is_admin(current_user) %}
-            <button class="santa-button" >Kick</button>
+          {% if current_user != i.user %}
+          <button class="santa-button kick-user" style="margin-left: 5px;" data-toggle="modal"
+            data-target="#kickUser">Kick</button>
+          {% else %}
+          <button class="santa-button kick-user" style="margin-left: 5px;" data-toggle="modal" data-target="#kickUser"
+            disabled=true>Kick</button>
           {% endif %}
-          </div>
+          {% endif %}
         </div>
-        <br/><br/>
-        </div>
-        {% endfor %}
+      </div>
+      <br /><br />
+    </div>
+    {% endfor %}
 
-    <div class="modal fade" id="inviteUserToGroup" tabindex="-1" role="dialog" aria-labelledby="inviteUserToGroupLabel" aria-hidden="true">
+    <div class="modal fade" id="kickUser" tabindex="-1" role="dialog" aria-labelledby="kickUserFromGroupLabel""
+      aria-hidden=" true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="kickUserFromGroupLabel">Kick <span id="kickusername"></span> from {{
+              group.name }}?</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form method="POST" action="/kick?group_id={{ group.id }}">
+            <div class="modal-body">
+              <div class="form-group">
+                {{ kick_user_form.hidden_tag() }}
+                {{ wtf.form_field(kick_user_form.username) }}
+              </div>
+            </div>
+
+            <p style="margin-left: 10px; font-size: x-small;">Type the username of the user to confirm</p>
+            <div class="modal-footer">
+              {{ kick_user_form.submit_kick_user_form(class_="santa-button", disabled="true") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+
+
+
+    <div class="modal fade" id="inviteUserToGroup" tabindex="-1" role="dialog" aria-labelledby="inviteUserToGroupLabel"
+      aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -136,24 +186,26 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-           <form method="POST" action="/groups?group_id={{ group.id }}">
-          <div class="modal-body">
+          <form method="POST" action="/groups?group_id={{ group.id }}">
+            <div class="modal-body">
               <div class="form-group">
                 {{ invite_user_to_group_form.hidden_tag() }}
                 {{ wtf.form_field(invite_user_to_group_form.email) }}
               </div>
-          </div>
+            </div>
 
-            <p style="margin-left: 10px; font-size: x-small;">If the user doesn't have an account they will get an email invite</p>
-          <div class="modal-footer">
-                {{ invite_user_to_group_form.submit_invite_form(class_="santa-button") }}
-          </div>
+            <p style="margin-left: 10px; font-size: x-small;">If the user doesn't have an account they will get an email
+              invite</p>
+            <div class="modal-footer">
+              {{ invite_user_to_group_form.submit_invite_form(class_="santa-button") }}
+            </div>
           </form>
         </div>
       </div>
     </div>
 
-     <div class="modal fade" id="CreatePairs" tabindex="-1" role="dialog" aria-labelledby="inviteUserToGroupLabel" aria-hidden="true">
+    <div class="modal fade" id="CreatePairs" tabindex="-1" role="dialog" aria-labelledby="inviteUserToGroupLabel"
+      aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -162,21 +214,22 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-           <form method="POST" action="/groups?group_id={{ group.id }}">
-          <div class="modal-body">
+          <form method="POST" action="/groups?group_id={{ group.id }}">
+            <div class="modal-body">
               <div class="form-group">
                 {{ create_pairs_form.hidden_tag() }}
                 {{ wtf.form_field(create_pairs_form.confirmation) }}
               </div>
-          </div>
+            </div>
 
-          <div class="modal-footer">
-                {{ create_pairs_form.submit_create_pairs_form(class_="santa-button", id="create_pair_button", disabled="true") }}
-          </div>
+            <div class="modal-footer">
+              {{ create_pairs_form.submit_create_pairs_form(class_="santa-button", id="create_pair_button",
+              disabled="true") }}
+            </div>
           </form>
         </div>
       </div>
-    </div>   
+    </div>
 
 
   </div>
@@ -192,8 +245,8 @@
   const group_id = (new URL(window.location.href)).searchParams.get("group_id");
   const user_id = "{{ current_user.id }}";
 
-  async function toggleRevealButton(target){
-    async function toggle(action){
+  async function toggleRevealButton(target) {
+    async function toggle(action) {
       let url = `${origin}/reveal_toggle`;
       let response = await fetch(url, {
         method: 'POST',
@@ -211,25 +264,45 @@
       return json;
     }
 
-    if(target.checked === true){
+    if (target.checked === true) {
       var response = await toggle(1);
-    }else{
+    } else {
       var response = await toggle(0);
     }
-      console.log(response);
+    console.log(response);
 
   }
-  
+
 
   create_pair_form
-  .querySelector("textarea")
-  .addEventListener("change", function(e){
-    if(e.target.value === "yes"){
-      create_pair_button.disabled = false;
-    }else{
-      create_pair_button.disabled = true;
+    .querySelector("textarea")
+    .addEventListener("change", function (e) {
+      if (e.target.value === "yes") {
+        create_pair_button.disabled = false;
+      } else {
+        create_pair_button.disabled = true;
+      }
+    });
+
+  document.querySelectorAll(".kick-user").forEach(function (button) {
+    button.addEventListener("click", function (e) {
+      var username = button.parentElement.querySelector(
+        ".card-title"
+      ).innerText;
+      var kickUserModal = document.querySelector("#kickUser");
+      kickUserModal.querySelector("#kickusername").innerText = username;
+    })
+  })
+
+  document.querySelector("#username").addEventListener("change", function (e) {
+    var username = document.querySelector("#kickusername").innerText.replace("@", "");
+    var submit_button = document.querySelector("#submit_kick_user_form");
+    if (e.target.value == username) {
+      submit_button.disabled = false
+    } else {
+      submit_button.disabled = true
     }
-  });
+  })
 
 </script>
-  {% endblock %}
+{% endblock %}

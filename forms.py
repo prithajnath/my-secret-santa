@@ -40,6 +40,11 @@ class PairForm(FlaskForm):
     message = TextAreaField("Admin message")
 
 
+class KickUserForm(FlaskForm):
+    username = TextAreaField("User username")
+    submit_kick_user_form = SubmitField("Submit")
+
+
 class LeaveGroupForm(FlaskForm):
     confirmation = TextAreaField(
         "Are you sure? Pleas type the message above to confirm"

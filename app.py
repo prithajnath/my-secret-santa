@@ -38,6 +38,7 @@ from forms import (
     CreatePairsForm,
     ResetPasswordForm,
     LeaveGroupForm,
+    KickUserForm,
 )
 
 import os
@@ -266,6 +267,30 @@ def profile(username=None):
     return render_template("profile.html")
 
 
+@app.route("/kick", methods=["POST"])
+@login_required
+def kick():
+    group_id = request.args.get("group_id")
+    kick_user_form = KickUserForm()
+
+    if kick_user_form.validate() and kick_user_form.username.data:
+        association = (
+            db.session.query(GroupsAndUsersAssociation)
+            .select_from(GroupsAndUsersAssociation)
+            .join(User)
+            .filter(
+                and_(
+                    User.username == kick_user_form.username.data,
+                    GroupsAndUsersAssociation.group_id == group_id,
+                )
+            )
+            .first()
+        )
+        association.delete_from_db(db)
+
+        return redirect(f"/groups?group_id={group_id}")
+
+
 @app.route("/santa", methods=["GET", "POST"])
 @login_required
 def santa():
@@ -292,6 +317,7 @@ def group():
     leave_group_form = LeaveGroupForm()
     invite_user_to_group_form = InviteUserToGroupForm()
     create_pairs_form = CreatePairsForm()
+    kick_user_form = KickUserForm()
 
     # Args
     message = request.args.get("message")
@@ -460,6 +486,7 @@ def group():
                 "group.html",
                 create_pairs_form=create_pairs_form,
                 invite_user_to_group_form=invite_user_to_group_form,
+                kick_user_form=kick_user_form,
                 group=group,
                 message=message,
                 alert=alert,
