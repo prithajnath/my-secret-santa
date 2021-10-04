@@ -2,6 +2,7 @@ import json
 
 
 from flask_sqlalchemy import SQLAlchemy, event
+from sqlalchemy.sql import func
 from passlib.hash import pbkdf2_sha256
 from enum import Enum
 from mixins import dbMixin
@@ -168,6 +169,19 @@ class Task(dbMixin, db.Model):
 
     def __str__(self):
         return self.name
+
+
+class Message(dbMixin, db.Model):
+    __tablename__ = "messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    text = db.Column(db.String(200), unique=False, nullable=True)
+    created_at = db.Column(db.DateTime, default=func.current_timestamp())
+
+    def __str__(self):
+        return f"{self.created_at}:{self.sender_id} -> {seld.receiver_id}"
 
 
 class EmailInvite(dbMixin, db.Model):

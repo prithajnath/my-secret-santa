@@ -1,5 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  #messageContent {
+    overflow-y: scroll;
+    height: 400px;
+  }
+
+  .sender {
+    text-align: left;
+    background-color: #f12933;
+    padding: 15px;
+    color: white;
+    margin-right: 160px;
+  }
+
+  .receiver {
+    text-align: right;
+    padding: 15px;
+    margin-left: 160px;
+    background-color: lightgray;
+  }
+</style>
 <br /><br />
 <div class="container">
   {% if secret_santees %}
@@ -61,7 +82,8 @@
         </div>
         <div style="display: flex;">
 
-          <button class="santa-button" style="margin: 5px;">Message</button>
+          <button class="santa-button" style="margin: 5px;" data-toggle="modal" data-target="#MessageModal"
+            onclick="grabMessagesForUser(this)">Message</button>
           {% if group.reveal_latest_pairs %}
           <button style="margin: 5px;" onclick="revealSecretSanta(this)" class="santa-button">Reveal</button>
           {% else %}
@@ -73,6 +95,32 @@
     <br /><br />
 
     {% endfor %}
+
+    <div class="modal fade" id="MessageModal" tabindex="-1" role="dialog" aria-labelledby="MessageModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="MessageModalLabel"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div id="messageContent">
+
+            </div>
+          </div>
+          <div class="modal-footer">
+            <textarea id="messageText" style="width: 80%;"></textarea>
+            <button onclick="sendMessage(this)" class="santa-button">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
 
     <div class="modal fade" id="RevealSecretSanta" tabindex="-1" role="dialog" aria-labelledby="RevealSecretSantaLabel"
       aria-hidden="true">
@@ -112,9 +160,125 @@
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async function revealSecretSanta(target) {
+
+  async function sendMessage(target) {
     const csrf_token = "{{ csrf_token() }}";
     const modal = document.querySelector(".modal");
+    const origin = window.location.origin;
+    const group_name = target
+      .parentElement
+      .parentElement
+      .querySelector("h5")
+      .innerText;
+
+
+    const messageText = document.querySelector("#messageText");
+    const messageContent = document.querySelector("#messageContent");
+    var p = document.createElement("p");
+    var textContent = messageText.value;
+    p.innerText = textContent;
+    p.className = "receiver";
+    messageContent.append(p);
+    messageText.value = "";
+
+
+    const url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
+    const response = await fetch(url, {
+      headers: {
+        "X-CSRFToken": csrf_token,
+        "Content-Type": "application/json;charset=utf-8"
+      },
+      method: "POST",
+      body: JSON.stringify({
+        message: textContent
+      })
+    });
+    const json = await response.json();
+
+    document.querySelector("#messageContent")
+      .scrollTo(0,
+        document.querySelector("#messageContent").scrollHeight
+      )
+
+
+  }
+
+  async function grabMessagesForUser(target) {
+    const csrf_token = "{{ csrf_token() }}";
+    const origin = window.location.origin;
+    const modal = document.querySelector("#MessageModal");
+    const group_name = target
+      .parentElement
+      .parentElement
+      .querySelector("h5")
+      .innerText;
+
+    const url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
+    var response = await fetch(url, {
+      headers: {
+        "X-CSRFToken": csrf_token,
+      }
+    });
+    const json = await response.json();
+
+
+    const messageContent = document.querySelector("#messageContent");
+    messageContent.innerText = "";
+
+    modal.querySelector("h5").innerText = group_name;
+
+    var messageList = json.result;
+
+    messageList.forEach(function (content) {
+      [type, text] = content;
+      var p = document.createElement("p");
+      p.innerText = text;
+      if (type === "sender") {
+        p.className = "sender";
+      } else if (type === "receiver") {
+        p.className = "receiver";
+      }
+
+      messageContent.appendChild(p);
+    });
+
+    while ($('body').hasClass('modal-open')) {
+      await sleep(2000);
+      var response = await fetch(url, {
+        headers: {
+          "X-CSRFToken": csrf_token,
+        }
+      });
+      var newJson = await response.json();
+
+      if (newJson.result.length > messageList.length) {
+        var newMessages = newJson.result.slice(messageList.length);
+        messageList = newJson.result;
+        newMessages.forEach(function (message) {
+          var [type, text] = message;
+          if (type == "sender") {
+            var p = document.createElement("p");
+            p.className = type;
+            p.innerText = text;
+            messageContent.appendChild(p);
+          }
+
+        })
+        document.querySelector("#messageContent")
+          .scrollTo(0,
+            document.querySelector("#messageContent").scrollHeight
+          )
+
+      }
+
+    }
+
+
+  }
+
+  async function revealSecretSanta(target) {
+    const csrf_token = "{{ csrf_token() }}";
+    const modal = document.querySelector("#RevealSecretSanta");
     const origin = window.location.origin;
     const username = target
       .parentElement

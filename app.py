@@ -11,12 +11,13 @@ from models import (
     GroupsAndUsersAssociation,
     GroupPairReveals,
     EmailInvite,
+    Message,
     PasswordReset,
     all_admin_materialized_view,
     all_latest_pairs_view,
 )
 from serializers import ma
-from sqlalchemy import func, select, and_, JSON, cast
+from sqlalchemy import func, select, and_, or_, JSON, cast
 from sqlalchemy.types import Unicode
 from celery import Celery
 from flask_mail import Mail
@@ -591,6 +592,65 @@ def index():
 
 
 # JSON endpoints
+@app.route("/santa_message", methods=["GET", "POST"])
+@login_required
+def santa_message():
+    group_name = request.args.get("group_name")
+
+    secret_santa_for_this_group = (
+        all_latest_pairs_view.query.filter_by(
+            group_name=group_name, receiver_username=current_user.username
+        )
+        .first()
+        .giver_username
+    )
+
+    secret_santa = User.query.filter_by(username=secret_santa_for_this_group).first()
+
+    if request.method == "POST":
+        message = request.json.get("message")
+        new_message = Message(
+            sender_id=current_user.id,
+            receiver_id=secret_santa.id,
+            text=message,
+            created_at=datetime.now(),
+        )
+
+        new_message.save_to_db(db)
+
+        return jsonify(result=True)
+
+    messages = (
+        db.session.query(User, Message)
+        .select_from(Message)
+        .join(
+            User,
+            and_(
+                Message.sender_id == User.id,
+            ),
+        )
+        .order_by(Message.created_at)
+        .filter(
+            or_(
+                and_(
+                    Message.sender_id == current_user.id,
+                    Message.receiver_id == secret_santa.id,
+                ),
+                and_(
+                    Message.sender_id == secret_santa.id,
+                    Message.receiver_id == current_user.id,
+                ),
+            )
+        )
+        .all()
+    )
+
+    return jsonify(
+        result=[
+            ("receiver" if user == current_user else "sender", message.text)
+            for user, message in messages
+        ]
+    )
 
 
 @app.route("/reveal_toggle", methods=["POST"])
