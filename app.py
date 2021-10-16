@@ -6,16 +6,19 @@ from models import (
     Group,
     User,
     Pair,
+    Task,
     PairCreationStatus,
     GroupsAndUsersAssociation,
     GroupPairReveals,
     EmailInvite,
+    Message,
     PasswordReset,
     all_admin_materialized_view,
     all_latest_pairs_view,
 )
 from serializers import ma
-from sqlalchemy import func, select
+from sqlalchemy import func, select, and_, or_, JSON, cast
+from sqlalchemy.types import Unicode
 from celery import Celery
 from flask_mail import Mail
 from flask_login import (
@@ -36,6 +39,7 @@ from forms import (
     CreatePairsForm,
     ResetPasswordForm,
     LeaveGroupForm,
+    KickUserForm,
 )
 
 import os
@@ -92,19 +96,26 @@ def reset_password():
         email = form.email.data
         user = User.query.filter_by(email=email).first()
         if user:
-            currently_running_reset_attempt = (
-                PasswordReset.query.with_entities(func.max(PasswordReset.started_at))
-                .filter_by(user_id=user.id, status="resetting")
-                .first()[0]
-            )
+            currently_running_reset_attempt = Task.query.filter(
+                and_(
+                    Task.payload["email"].as_string() == user.email,
+                    Task.name == "reset_user_password",
+                    Task.status == "starting",
+                )
+            ).first()
+
             if currently_running_reset_attempt:
                 message = "Already processing recent password reset"
                 return render_template(
                     "reset_password.html", form=form, message=message
                 )
 
-            password_reset_attempts = PasswordReset.query.filter_by(
-                user_id=user.id
+            password_reset_attempts = Task.query.filter(
+                and_(
+                    Task.payload["email"].as_string() == user.email,
+                    Task.name == "reset_user_password",
+                    Task.status == "finished",
+                )
             ).all()
             if len(password_reset_attempts) < 3:
                 with AdvisoryLock(
@@ -112,12 +123,14 @@ def reset_password():
                 ).grab_lock() as locked_session:
                     lock, session = locked_session
                     if lock:
-                        new_attempt = PasswordReset(
-                            user_id=user.id,
+                        new_attempt = Task(
+                            name="reset_user_password",
+                            payload={
+                                "email": user.email,
+                            },
                             started_at=datetime.now(),
-                            status="resetting",
+                            status="starting",
                         )
-
                         session.add(new_attempt)
 
                     else:
@@ -137,10 +150,14 @@ def reset_password():
                 )
             else:
                 last_reset_attempt_date = (
-                    PasswordReset.query.with_entities(
-                        func.max(PasswordReset.started_at)
+                    Task.query.with_entities(func.max(Task.started_at))
+                    .filter(
+                        and_(
+                            Task.payload["email"].as_string() == user.email,
+                            Task.name == "reset_user_password",
+                            Task.status == "finished",
+                        )
                     )
-                    .filter_by(user_id=user.id)
                     .first()[0]
                 )
                 today = datetime.now()
@@ -160,10 +177,14 @@ def reset_password():
                     ).grab_lock() as locked_session:
                         lock, session = locked_session
                         if lock:
-                            new_attempt = PasswordReset(
-                                user_id=user.id,
+
+                            new_attempt = Task(
+                                payload={
+                                    "name": "reset_user_password",
+                                    "email": user.email,
+                                },
                                 started_at=datetime.now(),
-                                status="resetting",
+                                status="starting",
                             )
 
                             session.add(new_attempt)
@@ -226,10 +247,49 @@ def edit_profile():
     return render_template("edit_profile.html", form=form, hint=hint, address=address)
 
 
+@app.route("/profile/<username>", methods=["GET"])
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
-def profile():
+def profile(username=None):
+    if username:
+        user = User.query.filter_by(username=username).first()
+        # Only reveal profile info if the current user is the secret santa of this username in some group
+        secret_santees = all_latest_pairs_view.query.filter_by(
+            giver_username=current_user.username
+        ).all()
+
+        if username in [row.receiver_username for row in secret_santees]:
+            return render_template("profile.html", user=user)
+        else:
+            return render_template(
+                "profile.html",
+                not_allowed="Oops, you're not allowed to view this profile!",
+            )
     return render_template("profile.html")
+
+
+@app.route("/kick", methods=["POST"])
+@login_required
+def kick():
+    group_id = request.args.get("group_id")
+    kick_user_form = KickUserForm()
+
+    if kick_user_form.validate() and kick_user_form.username.data:
+        association = (
+            db.session.query(GroupsAndUsersAssociation)
+            .select_from(GroupsAndUsersAssociation)
+            .join(User)
+            .filter(
+                and_(
+                    User.username == kick_user_form.username.data,
+                    GroupsAndUsersAssociation.group_id == group_id,
+                )
+            )
+            .first()
+        )
+        association.delete_from_db(db)
+
+        return redirect(f"/groups?group_id={group_id}")
 
 
 @app.route("/santa", methods=["GET", "POST"])
@@ -241,10 +301,13 @@ def santa():
             user_id=current_user.id
         ).all()
     ]
-    groups_that_can_be_revealed = [
-        group for group in all_groups if group.reveal_latest_pairs
-    ]
-    return render_template("santa.html", groups=groups_that_can_be_revealed)
+    secret_santees = all_latest_pairs_view.query.filter_by(
+        giver_username=current_user.username
+    ).all()
+
+    return render_template(
+        "santa.html", groups=all_groups, secret_santees=secret_santees
+    )
 
 
 @app.route("/groups", methods=["GET", "POST"])
@@ -255,6 +318,7 @@ def group():
     leave_group_form = LeaveGroupForm()
     invite_user_to_group_form = InviteUserToGroupForm()
     create_pairs_form = CreatePairsForm()
+    kick_user_form = KickUserForm()
 
     # Args
     message = request.args.get("message")
@@ -335,11 +399,14 @@ def group():
                         if lock:
                             # NOTE: Can't pass SQLAlchemy objects like group* and current_user** here because
                             # they are attached to a different session
-                            creation_attempt = PairCreationStatus(
-                                group_id=group.id,  # *
+                            creation_attempt = Task(
                                 started_at=datetime.now(),
-                                initiator_id=current_user.id,  # **
-                                status="creating",
+                                name="create_pairs",
+                                payload={
+                                    "group_id": group.id,
+                                    "initiator_id": current_user.id,
+                                },
+                                status="starting",
                             )
 
                             session.add(creation_attempt)
@@ -352,7 +419,7 @@ def group():
                             )
 
                     # Again, only queue messages after lock has been released
-                    task = celery.send_task("pair.create", (group_id,))
+                    task = celery.send_task("pair.create_pairs", (group_id,))
 
                     if task.status == "PENDING":
                         timestamp = maya.MayaDT.from_datetime(datetime.now())
@@ -420,6 +487,7 @@ def group():
                 "group.html",
                 create_pairs_form=create_pairs_form,
                 invite_user_to_group_form=invite_user_to_group_form,
+                kick_user_form=kick_user_form,
                 group=group,
                 message=message,
                 alert=alert,
@@ -526,6 +594,120 @@ def index():
 # JSON endpoints
 
 
+@app.route("/santee_message", methods=["GET", "POST"])
+@login_required
+def santee_message():
+    to = request.args.get("to")
+
+    santee = User.query.filter_by(username=to).first()
+
+    if request.method == "POST":
+        message = request.json.get("message")
+        new_message = Message(
+            sender_id=current_user.id,
+            receiver_id=santee.id,
+            text=message,
+            created_at=datetime.now(),
+        )
+
+        new_message.save_to_db(db)
+
+        return jsonify(result=True)
+
+    messages = (
+        db.session.query(User, Message)
+        .select_from(Message)
+        .join(
+            User,
+            and_(
+                Message.sender_id == User.id,
+            ),
+        )
+        .filter(
+            or_(
+                and_(
+                    Message.receiver_id == santee.id,
+                    Message.sender_id == current_user.id,
+                ),
+                and_(
+                    Message.sender_id == santee.id,
+                    Message.receiver_id == current_user.id,
+                ),
+            )
+        )
+        .order_by(Message.created_at)
+        .all()
+    )
+
+    return jsonify(
+        result=[
+            ("receiver" if user == current_user else "sender", message.text)
+            for user, message in messages
+        ]
+    )
+
+
+@app.route("/santa_message", methods=["GET", "POST"])
+@login_required
+def santa_message():
+    group_name = request.args.get("group_name")
+
+    secret_santa_for_this_group = (
+        all_latest_pairs_view.query.filter_by(
+            group_name=group_name, receiver_username=current_user.username
+        )
+        .first()
+        .giver_username
+    )
+
+    secret_santa = User.query.filter_by(username=secret_santa_for_this_group).first()
+
+    if request.method == "POST":
+        message = request.json.get("message")
+        new_message = Message(
+            sender_id=current_user.id,
+            receiver_id=secret_santa.id,
+            text=message,
+            created_at=datetime.now(),
+        )
+
+        new_message.save_to_db(db)
+
+        return jsonify(result=True)
+
+    messages = (
+        db.session.query(User, Message)
+        .select_from(Message)
+        .join(
+            User,
+            and_(
+                Message.sender_id == User.id,
+            ),
+        )
+        .order_by(Message.created_at)
+        .filter(
+            or_(
+                and_(
+                    Message.sender_id == current_user.id,
+                    Message.receiver_id == secret_santa.id,
+                ),
+                and_(
+                    Message.sender_id == secret_santa.id,
+                    Message.receiver_id == current_user.id,
+                ),
+            )
+        )
+        .all()
+    )
+
+    return jsonify(
+        result=[
+            ("receiver" if user == current_user else "sender", message.text)
+            for user, message in messages
+        ]
+    )
+
+
 @app.route("/reveal_toggle", methods=["POST"])
 def reveal_group_santas():
     group_id = request.json.get("group_id")
@@ -558,12 +740,12 @@ def reveal_group_santas():
 def reveal_secret_santa():
     group_name = request.args.get("group_name")
     secret_santa = all_latest_pairs_view.query.filter_by(
-        group_name=group_name, receiver_id=current_user.id
+        group_name=group_name, receiver_username=current_user.username
     ).first()
 
     group = Group.query.filter_by(name=group_name).first()
     users = [i.user.username for i in group.users]
-    return jsonify(username=secret_santa.username, randos=choices(users, k=10))
+    return jsonify(username=secret_santa.giver_username, randos=choices(users, k=10))
 
 
 if __name__ == "__main__":

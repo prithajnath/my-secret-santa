@@ -1,4 +1,8 @@
+import json
+
+
 from flask_sqlalchemy import SQLAlchemy, event
+from sqlalchemy.sql import func
 from passlib.hash import pbkdf2_sha256
 from enum import Enum
 from mixins import dbMixin
@@ -145,6 +149,39 @@ class PairCreationStatus(dbMixin, db.Model):
     started_at = db.Column(db.DateTime)
     finished_at = db.Column(db.DateTime)
     status = db.Column(db.Enum(Status))
+
+
+class Task(dbMixin, db.Model):
+    __tablename__ = "tasks"
+
+    class TaskStatus(Enum):
+        starting = 0
+        processing = 1
+        finished = 2
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), default="unnamed_task")
+    payload = db.Column(db.JSON)
+    error = db.Column(db.Text)
+    started_at = db.Column(db.DateTime)
+    finished_at = db.Column(db.DateTime)
+    status = db.Column(db.Enum(TaskStatus))
+
+    def __str__(self):
+        return self.name
+
+
+class Message(dbMixin, db.Model):
+    __tablename__ = "messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    text = db.Column(db.String(200), unique=False, nullable=True)
+    created_at = db.Column(db.DateTime, default=func.current_timestamp())
+
+    def __str__(self):
+        return f"{self.created_at}:{self.sender_id} -> {seld.receiver_id}"
 
 
 class EmailInvite(dbMixin, db.Model):

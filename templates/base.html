@@ -1,45 +1,46 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
-      <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
-      <style>
-      iframe{
-        width: 1250px;
-        height: 500px;
-      }
 
-      #hint{
-        width: 400%;
-        height: 200px;
-      }
-
-      #address{
-        width: 400%;
-        height: 200px;
-      }
-      </style>
-    <title>My Secret Santa</title>
-  </head>
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
   <style>
-  body{
+    iframe {
+      width: 1250px;
+      height: 500px;
+    }
+
+    #hint {
+      width: 400%;
+      height: 200px;
+    }
+
+    #address {
+      width: 400%;
+      height: 200px;
+    }
+  </style>
+  <title>My Secret Santa</title>
+</head>
+<style>
+  body {
     font-family: 'Roboto Mono', monospace;
     background-color: #fefcfb;
-    background-image: radial-gradient(circle 30px,#bfb2b2 0%, #a2999900 10%);
+    background-image: radial-gradient(circle 30px, #bfb2b2 0%, #a2999900 10%);
     background-position: 0 0, 50px 50px;
     background-size: 100px 100px;
     background-attachment: fixed;
   }
 
-  .santa-button{
+  .santa-button {
     background-color: #fefcfb;
     border-color: black;
     border-style: solid;
@@ -52,7 +53,7 @@
     transition: all 0.4s;
   }
 
-  .santa-button:hover{
+  .santa-button:hover {
     cursor: pointer;
     background-color: #f12933;
     color: #fefcfb;
@@ -60,7 +61,16 @@
     display: inline block;
   }
 
-  .modal-content{
+  .santa-button:disabled {
+    cursor: auto;
+    background-color: #fefcfb;
+    border-color: #6b6b6b;
+    color: #6b6b6b;
+    position: relative;
+    display: inline block;
+  }
+
+  .modal-content {
     border-radius: 0px;
     border-width: 10px;
     border-color: black;
@@ -81,65 +91,75 @@
     width: 100%;
   }
 
-  .santa-card{
+  .santa-card {
     border-width: thick;
     border-color: black;
   }
 
 
-  a{
+  a {
     text-decoration: none;
     color: inherit;
   }
 
-  a:hover{
+  a:hover {
     text-decoration: none;
     color: #fefcfb;
   }
 
-  svg{
+  svg {
     cursor: pointer;
   }
+</style>
 
-  </style>
-  <body>
-    <nav style="background-color: #212529; color: #fefcfb" class="navbar navbar-dark navbar-expand-lg">
-        <a class="navbar-brand" href="/" style="font-family: 'Rubik Mono One', sans-serif;"><img style="height: 40px;" src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1605468679/huge_1_ftwk3b.png"/></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+<body>
+  <nav style="background-color: #212529; color: #fefcfb" class="navbar navbar-dark navbar-expand-lg">
+    <a class="navbar-brand" href="/" style="font-family: 'Rubik Mono One', sans-serif;"><img style="height: 40px;"
+        src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1605468679/huge_1_ftwk3b.png" /></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-            </ul>
-            <div class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                @{{ current_user.username }}
-            </a>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                <a class="dropdown-item" href="/profile">Profile</a>
-                <a class="dropdown-item" href="/groups">Groups</a>
-                <a class="dropdown-item" href="/santa">Secret santa</a>
-                <a class="dropdown-item" href="/change_password">Change password</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/logout">Logout</a>
-            </div>
-            </div>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+      </ul>
+      <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+          aria-haspopup="true" aria-expanded="false">
+          @{{ current_user.username }}
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+          <a class="dropdown-item" href="/profile">Profile</a>
+          <a class="dropdown-item" href="/groups">Groups</a>
+          <a class="dropdown-item" href="/santa">Secret santa</a>
+          <a class="dropdown-item" href="/change_password">Change password</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="/logout">Logout</a>
         </div>
-    </nav>
+      </div>
+    </div>
+  </nav>
 
-    {% block content %}{% endblock %}
+  {% block content %}{% endblock %}
 
-    <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
 
-    <script>
-      $('.alert').on('closed.bs.alert', function() {
-        window.location.search = "";
-      });
-    </script>
-  </body>
+  <script>
+    $('.alert').on('closed.bs.alert', function () {
+      window.location.search = "";
+    });
+  </script>
+</body>
+
 </html>

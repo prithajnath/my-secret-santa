@@ -21,6 +21,7 @@ services:
       - SECRET_KEY=$SECRET_KEY
       - ENV=production
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
       - SENDGRID_INVITE_TEMPLATE_ID=${SENDGRID_INVITE_TEMPLATE_ID}
       - SENDGRID_PAIR_TEMPLATE_ID=${SENDGRID_PAIR_TEMPLATE_ID}
       - SENDGRID_RESET_PASSWORD_TEMPLATE_ID=${SENDGRID_RESET_PASSWORD_TEMPLATE_ID}
@@ -38,6 +39,7 @@ services:
       - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
       - ENV=production
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
       - SENDGRID_INVITE_TEMPLATE_ID=${SENDGRID_INVITE_TEMPLATE_ID}
       - SENDGRID_PAIR_TEMPLATE_ID=${SENDGRID_PAIR_TEMPLATE_ID}
       - SENDGRID_RESET_PASSWORD_TEMPLATE_ID=${SENDGRID_RESET_PASSWORD_TEMPLATE_ID}
@@ -52,7 +54,7 @@ services:
   secret-santa-postgres:
     volumes:
       - /home/ubuntu/.local/volumes/my-secret-santa:/var/lib/postgresql/data
-    image: postgres
+    image: postgres:13
     restart: always
     environment:
         - POSTGRES_HOST_AUTH_METHOD=trust 

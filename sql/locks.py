@@ -8,13 +8,15 @@ from contextlib import contextmanager
 
 from typing import Tuple, Generator
 
-class AdvisoryLock:  
+
+class AdvisoryLock:
     """
     # Abstracts acquiring Postgres session level locks  #
 
     The idea is that if process P acquires lock L (with a key K) from session S,
     another process P2 from another session S2 won't be able to acquire another lock L2 with the same key (K).
     """
+
     def __init__(self, engine: SQLAlchemy, lock_key: str):
         self.session = sessionmaker(bind=engine)
         self.lock_key = lock_key
@@ -61,9 +63,7 @@ class AdvisoryLock:
             yield (advisory_lock, session)
 
             # **
-            session.execute(
-                select([func.pg_advisory_unlock(advisory_lock_key)])
-            )
+            session.execute(select([func.pg_advisory_unlock(advisory_lock_key)]))
 
         except:
             session.rollback()
