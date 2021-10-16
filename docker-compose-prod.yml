@@ -15,7 +15,7 @@ services:
     environment:
       - APP_ROOT=/usr/bin/secretsanta
       - PORT=9000
-      - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
+      - DATABASE_URL=postgresql://postgres@secret-santa-postgres:5432/postgres
       - MAIL_USERNAME=$MAIL_USERNAME
       - MAIL_PASSWORD=$MAIL_PASSWORD
       - SECRET_KEY=$SECRET_KEY
@@ -36,7 +36,7 @@ services:
     user: "${UID}:${GID}"
     environment:
       - APP_ROOT=/usr/bin/secretsanta
-      - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
+      - DATABASE_URL=postgresql://postgres@secret-santa-postgres:5432/postgres
       - ENV=production
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
       - MAILGUN_API_KEY=${MAILGUN_API_KEY}

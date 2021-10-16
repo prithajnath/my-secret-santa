@@ -13,7 +13,7 @@ services:
     environment:
       - APP_ROOT=/usr/bin/secretsanta
       - PORT=9000
-      - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
+      - DATABASE_URL=postgresql://postgres@secret-santa-postgres:5432/postgres
       - MAIL_USERNAME=dev-username
       - MAIL_PASSWORD=dev-password
       - SECRET_KEY=hellosecretkey
@@ -33,7 +33,7 @@ services:
       - .:/usr/bin/secretsanta
     environment:
       - APP_ROOT=/usr/bin/secretsanta
-      - DATABASE_URL=postgres://postgres@secret-santa-postgres:5432/postgres
+      - DATABASE_URL=postgresql://postgres@secret-santa-postgres:5432/postgres
       - ENV=development
       - CELERY_BROKER_URL=redis://secret-santa-redis
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
