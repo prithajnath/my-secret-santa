@@ -8,17 +8,18 @@
 
   .sender {
     text-align: left;
-    background-color: #f12933;
-    padding: 15px;
-    color: white;
+    background-color: lightgray;
+
     margin-right: 160px;
+    padding: 15px;
   }
 
   .receiver {
     text-align: right;
-    padding: 15px;
+    background-color: #f12933;
+    color: white;
     margin-left: 160px;
-    background-color: lightgray;
+    padding: 15px;
   }
 </style>
 <br /><br />
@@ -46,7 +47,8 @@
         <div style="display: flex;">
           <button class="santa-button" style="margin: 5px;"><a href="/profile/{{ santee.receiver_username }}">View
               profile</a></button>
-          <button class="santa-button" style="margin: 5px;">Message</button>
+          <button class="santa-button" style="margin: 5px;" data-target="#MessageModal" data-toggle="modal"
+            onclick="grabMessagesForUser(this, '{{ santee.receiver_username }}')">Message</button>
           <br />
         </div>
       </div>
@@ -108,13 +110,14 @@
           </div>
 
           <div class="modal-body">
+            <div class="santee_username" username=""></div>
             <div id="messageContent">
 
             </div>
           </div>
           <div class="modal-footer">
             <textarea id="messageText" style="width: 80%;"></textarea>
-            <button onclick="sendMessage(this)" class="santa-button">Send</button>
+            <button onclick="sendMessageToSanta(this)" class="santa-button">Send</button>
           </div>
         </div>
       </div>
@@ -161,7 +164,7 @@
   }
 
 
-  async function sendMessage(target) {
+  async function sendMessageToSanta(target) {
     const csrf_token = "{{ csrf_token() }}";
     const modal = document.querySelector(".modal");
     const origin = window.location.origin;
@@ -182,17 +185,37 @@
     messageText.value = "";
 
 
-    const url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
-    const response = await fetch(url, {
-      headers: {
-        "X-CSRFToken": csrf_token,
-        "Content-Type": "application/json;charset=utf-8"
-      },
-      method: "POST",
-      body: JSON.stringify({
-        message: textContent
-      })
-    });
+    const username = modal
+      .querySelector("div[class='santee_username']")
+      .getAttribute("username");
+
+
+    if (username.length === 0) {
+      var url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
+      var response = await fetch(url, {
+        headers: {
+          "X-CSRFToken": csrf_token,
+          "Content-Type": "application/json;charset=utf-8"
+        },
+        method: "POST",
+        body: JSON.stringify({
+          message: textContent
+        })
+      });
+    } else {
+      var url = encodeURI(`${origin}/santee_message?to=${username}`);
+      var response = await fetch(url, {
+        headers: {
+          "X-CSRFToken": csrf_token,
+          "Content-Type": "application/json;charset=utf-8"
+        },
+        method: "POST",
+        body: JSON.stringify({
+          message: textContent
+        })
+      });
+    }
+
     const json = await response.json();
 
     document.querySelector("#messageContent")
@@ -203,7 +226,7 @@
 
   }
 
-  async function grabMessagesForUser(target) {
+  async function grabMessagesForUser(target, to = null) {
     const csrf_token = "{{ csrf_token() }}";
     const origin = window.location.origin;
     const modal = document.querySelector("#MessageModal");
@@ -213,19 +236,39 @@
       .querySelector("h5")
       .innerText;
 
-    const url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
-    var response = await fetch(url, {
-      headers: {
-        "X-CSRFToken": csrf_token,
-      }
-    });
-    const json = await response.json();
+    if (!to) {
+      var url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
+      var response = await fetch(url, {
+        headers: {
+          "X-CSRFToken": csrf_token,
+        }
+      });
+      var json = await response.json();
 
 
-    const messageContent = document.querySelector("#messageContent");
-    messageContent.innerText = "";
+      var messageContent = document.querySelector("#messageContent");
+      messageContent.innerText = "";
 
-    modal.querySelector("h5").innerText = group_name;
+      modal.querySelector("h5").innerText = group_name;
+      modal.querySelector("div[class='santee_username']").setAttribute("username", "");
+    } else {
+      var url = encodeURI(`${origin}/santee_message?to=${to}`);
+      var response = await fetch(url, {
+        headers: {
+          "X-CSRFToken": csrf_token,
+        }
+      });
+      var json = await response.json();
+
+
+      var messageContent = document.querySelector("#messageContent");
+      messageContent.innerText = "";
+
+      modal.querySelector("h5").innerText = group_name;
+
+      modal.querySelector("div[class='santee_username']").setAttribute("username", to);
+    }
+
 
     var messageList = json.result;
 
@@ -242,6 +285,7 @@
       messageContent.appendChild(p);
     });
 
+    // poll the server for new messages as long as the modal is open
     while ($('body').hasClass('modal-open')) {
       await sleep(2000);
       var response = await fetch(url, {
@@ -264,6 +308,8 @@
           }
 
         })
+
+        // scroll to the bottom
         document.querySelector("#messageContent")
           .scrollTo(0,
             document.querySelector("#messageContent").scrollHeight

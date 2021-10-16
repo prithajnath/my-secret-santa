@@ -592,6 +592,61 @@ def index():
 
 
 # JSON endpoints
+
+
+@app.route("/santee_message", methods=["GET", "POST"])
+@login_required
+def santee_message():
+    to = request.args.get("to")
+
+    santee = User.query.filter_by(username=to).first()
+
+    if request.method == "POST":
+        message = request.json.get("message")
+        new_message = Message(
+            sender_id=current_user.id,
+            receiver_id=santee.id,
+            text=message,
+            created_at=datetime.now(),
+        )
+
+        new_message.save_to_db(db)
+
+        return jsonify(result=True)
+
+    messages = (
+        db.session.query(User, Message)
+        .select_from(Message)
+        .join(
+            User,
+            and_(
+                Message.sender_id == User.id,
+            ),
+        )
+        .filter(
+            or_(
+                and_(
+                    Message.receiver_id == santee.id,
+                    Message.sender_id == current_user.id,
+                ),
+                and_(
+                    Message.sender_id == santee.id,
+                    Message.receiver_id == current_user.id,
+                ),
+            )
+        )
+        .order_by(Message.created_at)
+        .all()
+    )
+
+    return jsonify(
+        result=[
+            ("receiver" if user == current_user else "sender", message.text)
+            for user, message in messages
+        ]
+    )
+
+
 @app.route("/santa_message", methods=["GET", "POST"])
 @login_required
 def santa_message():
