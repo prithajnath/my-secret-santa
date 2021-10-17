@@ -131,6 +131,17 @@
        }
        document.querySelector("#mfk").innerText = mfks.join("");
      }, 100);
+
+     var url = new URL(window.location.href);
+     var next = url.searchParams.get("next");
+     
+     if (next){
+       var form = document.querySelector("form")
+       var action = `${form.action}?next=${next}`;
+       form.action = action;
+     }
+
+
     </script>
     <script>
       $('.alert').on('closed.bs.alert', function() {

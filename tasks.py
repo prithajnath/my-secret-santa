@@ -248,7 +248,7 @@ def _reset_user_password(email, user):
         user.set_password(new_password)
         user.save_to_db(db)
         if os.getenv("ENV") == "production":
-            domain_name = "mysecretsanta.io"
+            domain_name = "www.mysecretsanta.io"
             response = requests.post(
                 f"https://api.mailgun.net/v3/{domain_name}/messages",
                 auth=("api", os.getenv("MAILGUN_API_KEY")),

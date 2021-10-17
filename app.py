@@ -515,6 +515,9 @@ def login():
         if user:
             if user.verify_hash(form.password.data, user.password):
                 login_user(user)
+                if next := request.args.get("next"):
+                    print(f"Next URL {next}")
+                    return redirect(next)
                 if user.admin:
                     return redirect("/admin")
                 else:
