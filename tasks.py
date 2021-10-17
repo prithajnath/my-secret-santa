@@ -234,16 +234,16 @@ def _make_pairs(pipe={}):
 
 
 @network_exception_retry
-def _send_secret_santa_email(giver, group_id):
+def _send_secret_santa_email(giver_email, giver_first_name, group_id):
     with app.app_context():
         group = Group.query.filter_by(id=group_id).first()
         send_email(
-            to=[giver.email],
+            to=[giver_email],
             subject="You are someone's secret santa!!!",
             template_name="secret_santa",
             payload={
                 "group_name": group.name,
-                "santa_name": giver.first_name,
+                "santa_name": giver_first_name,
                 "url": "https://www.mysecretsanta.io/login?next=/santa",
             },
         )
@@ -297,7 +297,7 @@ def send_secret_santa_email(email, group_id):
         task.status = "processing"
         task.save_to_db(db)
 
-        result = _send_secret_santa_email(user.email, group_id)
+        result = _send_secret_santa_email(user.email, user.first_name, group_id)
 
         task.status = "finished"
         task.error = str(result)
