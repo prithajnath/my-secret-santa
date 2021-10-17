@@ -1,4 +1,4 @@
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import ProgrammingError, NoSuchTableError
 from sqlalchemy.schema import Table, MetaData
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -34,18 +34,35 @@ class MaterializedView:
 
     @cached_property
     def _view(self):
-        return type(
-            self.name,
-            (declarative_base(),),
-            {
-                "__table__": Table(
-                    self.name,
-                    MetaData(bind=self.conn.engine),
-                    self.conn.Column("id", UUID(as_uuid=True), primary_key=True),
-                    autoload_with=self.conn.engine,
-                )
-            },
-        )
+        try:
+            _table = type(
+                self.name,
+                (declarative_base(),),
+                {
+                    "__table__": Table(
+                        self.name,
+                        MetaData(bind=self.conn.engine),
+                        self.conn.Column("id", UUID(as_uuid=True), primary_key=True),
+                        autoload_with=self.conn.engine,
+                    )
+                },
+            )
+
+        except NoSuchTableError:
+            self.create()
+            _table = type(
+                self.name,
+                (declarative_base(),),
+                {
+                    "__table__": Table(
+                        self.name,
+                        MetaData(bind=self.conn.engine),
+                        self.conn.Column("id", UUID(as_uuid=True), primary_key=True),
+                        autoload_with=self.conn.engine,
+                    )
+                },
+            )
+        return _table
 
 
 class AllAdminView(MaterializedView):
