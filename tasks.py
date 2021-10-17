@@ -8,7 +8,7 @@ from celery import Celery
 from time import time
 from requests import get
 from functools import wraps
-from typing import Tuple, Optional, Callable, Any, Union
+from typing import Tuple, Dict, Optional, Callable, Any, Union
 from random import uniform
 from time import sleep
 from sqlalchemy.types import Unicode
@@ -36,6 +36,27 @@ celery.conf.task_routes = {
     "pair.*": {"queue": "pairs_queue"},
     "user.*": {"queue": "users_queue"},
 }
+
+
+def send_email(to: str, subject: str, template_name: str, payload: Dict):
+    if os.getenv("ENV") != "production":
+        domain_name = "www.mysecretsanta.io"
+        response = requests.post(
+            f"https://api.mailgun.net/v3/{domain_name}/messages",
+            auth=("api", os.getenv("MAILGUN_API_KEY")),
+            data={
+                "from": f"MySecretSanta <no-reply@{domain_name}>",
+                "to": [to],
+                "template": template_name,
+                "h:X-Mailgun-Variables": json.dumps(payload),
+                "subject": subject,
+            },
+        )
+
+    print(response.status_code)
+    print(response.content)
+    print(response.headers)
+
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
 # in the retry process
@@ -216,23 +237,16 @@ def _make_pairs(pipe={}):
 def _send_secret_santa_email(giver, group_id):
     with app.app_context():
         group = Group.query.filter_by(id=group_id).first()
-        if os.getenv("ENV") == "production":
-            domain_name = "mysecretsanta.io"
-            response = requests.post(
-                f"https://api.mailgun.net/v3/{domain_name}/messages",
-                auth=("api", os.getenv("MAILGUN_API_KEY")),
-                data={
-                    "from": f"Prithaj <prithaj@{domain_name}>",
-                    "to": [giver.email],
-                    "template": "password_reset",
-                    "h:X-Mailgun-Variables": json.dumps({"group_name": group.name}),
-                    "subject": f"{giver.first_name}, you are someone's secret santa!!!!",
-                },
-            )
-
-            print(response.status_code)
-            print(response.content)
-            print(response.headers)
+        send_email(
+            to=[giver.email],
+            subject="You are someone's secret santa!!!",
+            template_name="secret_santa",
+            payload={
+                "group_name": group.name,
+                "santa_name": giver.first_name,
+                "url": "https://www.mysecretsanta.io/login?next=/santa",
+            },
+        )
 
 
 @network_exception_retry
@@ -250,23 +264,14 @@ def _reset_user_password(email, user):
         )
         user.set_password(new_password)
         user.save_to_db(db)
-        if os.getenv("ENV") == "production":
-            domain_name = "www.mysecretsanta.io"
-            response = requests.post(
-                f"https://api.mailgun.net/v3/{domain_name}/messages",
-                auth=("api", os.getenv("MAILGUN_API_KEY")),
-                data={
-                    "from": f"Prithaj <prithaj@{domain_name}>",
-                    "to": [email],
-                    "template": "password_reset",
-                    "h:X-Mailgun-Variables": json.dumps({"new_password": new_password}),
-                    "subject": "Forgot your password?",
-                },
+        if os.getenv("ENV") != "production":
+            send_email(
+                to=[email],
+                subject="Forgot your password?",
+                template_name="password_reset",
+                payload={"new_password": new_password},
             )
 
-            print(response.status_code)
-            print(response.content)
-            print(response.headers)
         else:
             # This is just to simulate network errors in a dev environemnt
             requests.get("https://www.mysecretsanta.io/math")
