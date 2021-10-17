@@ -39,7 +39,7 @@ celery.conf.task_routes = {
 
 
 def send_email(to: str, subject: str, template_name: str, payload: Dict):
-    if os.getenv("ENV") != "production":
+    if os.getenv("ENV") == "production":
         domain_name = "www.mysecretsanta.io"
         response = requests.post(
             f"https://api.mailgun.net/v3/{domain_name}/messages",
@@ -264,7 +264,7 @@ def _reset_user_password(email, user):
         )
         user.set_password(new_password)
         user.save_to_db(db)
-        if os.getenv("ENV") != "production":
+        if os.getenv("ENV") == "production":
             send_email(
                 to=[email],
                 subject="Forgot your password?",
