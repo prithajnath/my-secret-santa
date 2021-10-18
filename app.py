@@ -508,6 +508,8 @@ def group():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
+        if next := request.args.get("next"):
+            return redirect(next)
         return redirect("/profile")
     form = LoginForm()
     if form.validate_on_submit():
@@ -516,7 +518,6 @@ def login():
             if user.verify_hash(form.password.data, user.password):
                 login_user(user)
                 if next := request.args.get("next"):
-                    print(f"Next URL {next}")
                     return redirect(next)
                 if user.admin:
                     return redirect("/admin")

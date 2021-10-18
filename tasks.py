@@ -244,7 +244,7 @@ def _send_secret_santa_email(giver_email, giver_first_name, group_id):
             payload={
                 "group_name": group.name,
                 "santa_name": giver_first_name,
-                "url": "https://www.mysecretsanta.io/login?next=/santa",
+                "url": "https://app.mysecretsanta.io/login?next=/santa",
             },
         )
 
