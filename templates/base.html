@@ -43,6 +43,7 @@
   .santa-button {
     background-color: #fefcfb;
     border-color: black;
+    border-width: 1.8px;
     border-style: solid;
     padding: 5px 15px 5px 15px;
     font-size: larger;
@@ -92,7 +93,7 @@
   }
 
   .santa-card {
-    border-width: thick;
+    border-width: 1px;
     border-color: black;
   }
 
@@ -113,7 +114,7 @@
 </style>
 
 <body>
-  <nav style="background-color: #212529; color: #fefcfb" class="navbar navbar-dark navbar-expand-lg">
+  <nav style="background-color: #212529; color: #fefcfb" class="navbar sticky-top navbar-dark navbar-expand-lg">
     <a class="navbar-brand" href="/" style="font-family: 'Rubik Mono One', sans-serif;"><img style="height: 40px;"
         src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1605468679/huge_1_ftwk3b.png" /></a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
@@ -127,7 +128,7 @@
       <div class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
           aria-haspopup="true" aria-expanded="false">
-          @{{ current_user.username }}
+          <img src={{ current_user.avatar_url }} style="height:45px; filter: invert(100%);"></img>{{ current_user.username }}
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
           <a class="dropdown-item" href="/profile">Profile</a>

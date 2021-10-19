@@ -73,6 +73,10 @@ class User(dbMixin, UserMixin, db.Model):
     def set_password(self, password):
         self.password = pbkdf2_sha256.hash(password)
 
+    @property
+    def avatar_url(self):
+        return f"https://avatars.dicebear.com/api/croodles/{self.username}.svg"
+
     def __str__(self):
         return self.email
 
