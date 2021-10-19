@@ -11,6 +11,9 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-6">
+      <img src="https://avatars.dicebear.com/api/croodles/{{user.username}}.svg">
+    </div>
+    <div class="col-lg-6">
       <br /><br />
       <h1>{{ user.first_name }} {{ user.last_name }}</h1>
       <p><strong>@{{ user.username }}</strong></p>
@@ -25,6 +28,9 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-6">
+      <img src="https://avatars.dicebear.com/api/croodles/{{current_user.username}}.svg">
+    </div>
+    <div class="col-lg-6">
       <br /><br />
       <h2>Email</h2>
       <p>{{ current_user.email }}</p>
@@ -32,9 +38,9 @@
       <p>{{ current_user.hint }}</p>
       <h2>Address</h2>
       <p>{{ current_user.address }}</p>
+      <a href="/edit_profile"><button class="santa-button">Edit</button></a>
     </div>
   </div>
-  <a href="/edit_profile"><button class="santa-button">Edit</button></a>
 </div>
 {% endif %}
 
