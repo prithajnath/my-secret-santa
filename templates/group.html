@@ -94,14 +94,16 @@
       </svg>
     </a>
 
-    <label class="switch">
-      {% if group.reveal_latest_pairs %}
-      <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
-      {% else %}
-      <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
-      {% endif %}
-      <span class="slider"></span>
-    </label>
+      <p style="padding-left: 60%">Reveal latest pairs</p>
+      <label class="switch">
+        {% if group.reveal_latest_pairs %}
+        <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
+        {% else %}
+        <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
+        {% endif %}
+        <span class="slider"></span>
+      </label>
+
   </div>
   {% endif %}
   <div class="row">
