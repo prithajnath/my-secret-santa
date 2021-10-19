@@ -53,9 +53,11 @@ def send_email(to: str, subject: str, template_name: str, payload: Dict):
             },
         )
 
-    print(response.status_code)
-    print(response.content)
-    print(response.headers)
+        print(response.status_code)
+        print(response.content)
+        print(response.headers)
+
+    print(f"pretending to send and email to {to}")
 
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
@@ -250,6 +252,17 @@ def _send_secret_santa_email(giver_email, giver_first_name, group_id):
 
 
 @network_exception_retry
+def _invite_user_to_sign_up(to_email, admin_first_name, group_name):
+    with app.app_context():
+        send_email(
+            to=[to_email],
+            subject="You've been invited to a secret santa draw!!",
+            template_name="secret_santa_invite",
+            payload={"admin_first_name": admin_first_name, "group_name": group_name},
+        )
+
+
+@network_exception_retry
 def _reset_user_password(email, user):
     with app.app_context():
         import random
@@ -332,34 +345,32 @@ def reset_user_password(email):
         task.save_to_db(db)
 
 
-@celery.task(name="user.invite")
+@celery.task(name="user.invite_user_to_sign_up")
 def invite_user_to_sign_up(to_email, admin_first_name, group_name):
-    sg = sendgrid.SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
-    template_id = os.environ.get("SENDGRID_INVITE_TEMPLATE_ID")
-    data = {
-        "from": {"email": "prithaj.nath@theangrydev.io"},
-        "personalizations": [
-            {
-                "to": [{"email": to_email}],
-                "subject": "SECRET SANTAAA!!!!!",
-                "dynamic_template_data": {
-                    "admin_first_name": admin_first_name,
-                    "group_name": group_name,
-                },
-            }
-        ],
-        "template_id": template_id,
-    }
+    with app.app_context():
+        task = (
+            Task.query.filter(
+                and_(
+                    Task.payload["to_email"].as_string() == to_email,
+                    Task.payload["admin_first_name"].as_string() == admin_first_name,
+                    Task.payload["group_name"].as_string() == group_name,
+                    Task.name == "invite_user_to_sign_up",
+                    Task.status == "starting",
+                )
+            )
+            .order_by(Task.started_at.desc())
+            .first()
+        )
 
-    response = None
-    try:
-        response = sg.client.mail.send.post(request_body=data)
-    except HTTPError as e:
-        print(e.to_dict)
-    if response:
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
+        task.status = "processing"
+        task.save_to_db(db)
+
+        result = _invite_user_to_sign_up(to_email, admin_first_name, group_name)
+
+        task.status = "finished"
+        task.error = str(result)
+        task.finished_at = datetime.now()
+        task.save_to_db(db)
 
 
 def chain(*args, pipe={}):

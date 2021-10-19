@@ -459,8 +459,23 @@ def group():
                 to_email = new_invite.invited_email
                 admin_first_name = current_user.first_name
                 group_name = group.name
+
+                _task = Task(
+                    name="invite_user_to_sign_up",
+                    started_at=datetime.now(),
+                    status="starting",
+                    payload={
+                        "to_email": to_email,
+                        "admin_first_name": admin_first_name,
+                        "group_name": group_name,
+                    },
+                )
+
+                _task.save_to_db(db)
+
                 task = celery.send_task(
-                    "user.invite", (to_email, admin_first_name, group_name)
+                    "user.invite_user_to_sign_up",
+                    (to_email, admin_first_name, group_name),
                 )
 
                 if task.status == "PENDING":
