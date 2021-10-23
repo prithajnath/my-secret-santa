@@ -94,15 +94,15 @@
       </svg>
     </a>
 
-      <p style="padding-left: 60%">Reveal latest pairs</p>
       <label class="switch">
         {% if group.reveal_latest_pairs %}
         <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
         {% else %}
         <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
         {% endif %}
-        <span class="slider"></span>
+        <span style="border-radius: 3px;" class="slider"></span>
       </label>
+
 
   </div>
   {% endif %}
@@ -266,8 +266,10 @@
 
     if (target.checked === true) {
       var response = await toggle(1);
+      alert("Pairs are now revealed. Everyone can see who their secret santas are for this group. If you want to undo this, just click on this toggle again")
     } else {
       var response = await toggle(0);
+      alert("Pairs are now hidden")
     }
     console.log(response);
 

@@ -199,13 +199,20 @@ class EmailInvite(dbMixin, db.Model):
 
     __tablename__ = "email_invites"
 
+    INVITE_PREFIX = {"admin": "ADMIN", "group": "GROUP"}
+
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime)
+    code = db.Column(db.String(20), unique=True, nullable=True)
+    payload = db.Column(db.JSON)
     invited_email = db.Column(db.String(120), nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
 
     def __str__(self):
         return self.invited_email
+
+    @classmethod
+    def generate_code(cls, type):
+        return f"{EmailInvite.INVITE_PREFIX[type]}-{str(uuid4())[:8].upper()}"
 
     __repr__ = __str__
 

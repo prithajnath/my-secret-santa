@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for
 from flask_wtf.csrf import CSRFProtect
+from collections import namedtuple
 from datetime import datetime, date
 from models import (
     db,
@@ -44,6 +45,7 @@ from forms import (
 
 import os
 import admin
+import re
 import hashlib
 from datetime import datetime
 from random import choices
@@ -440,54 +442,49 @@ def group():
             user = User.query.filter_by(
                 email=invite_user_to_group_form.email.data
             ).first()
-            if user:
-                new_group_assoc = GroupsAndUsersAssociation(
-                    group_id=group.id, user_id=user.id
-                )
-                new_group_assoc.save_to_db(db)
-                return redirect(url_for(".group", group_id=group.id))
-            else:
+            new_invite = EmailInvite(
+                timestamp=datetime.now(),
+                invited_email=invite_user_to_group_form.email.data,
+                code=EmailInvite.generate_code("group"),
+                payload={"group_id": group.id, "user_id": user.id}
+                if user
+                else {"group_id": group.id},
+            )
 
-                new_invite = EmailInvite(
-                    timestamp=datetime.now(),
-                    invited_email=invite_user_to_group_form.email.data,
-                    group_id=group.id,
-                )
+            new_invite.save_to_db(db)
 
-                new_invite.save_to_db(db)
+            to_email = new_invite.invited_email
+            admin_first_name = current_user.first_name
+            group_name = group.name
 
-                to_email = new_invite.invited_email
-                admin_first_name = current_user.first_name
-                group_name = group.name
+            _task = Task(
+                name="invite_user_to_sign_up",
+                started_at=datetime.now(),
+                status="starting",
+                payload={
+                    "to_email": to_email,
+                    "admin_first_name": admin_first_name,
+                    "group_name": group_name,
+                },
+            )
 
-                _task = Task(
-                    name="invite_user_to_sign_up",
-                    started_at=datetime.now(),
-                    status="starting",
-                    payload={
-                        "to_email": to_email,
-                        "admin_first_name": admin_first_name,
-                        "group_name": group_name,
-                    },
-                )
+            _task.save_to_db(db)
 
-                _task.save_to_db(db)
+            task = celery.send_task(
+                "user.invite_user_to_sign_up",
+                (to_email, admin_first_name, group_name),
+            )
 
-                task = celery.send_task(
-                    "user.invite_user_to_sign_up",
-                    (to_email, admin_first_name, group_name),
-                )
-
-                if task.status == "PENDING":
-                    return redirect(
-                        url_for(
-                            ".group",
-                            message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
-                            group_id=group_id,
-                            create_pairs_form=create_pairs_form,
-                            form=invite_user_to_group_form,
-                        )
+            if task.status == "PENDING":
+                return redirect(
+                    url_for(
+                        ".group",
+                        message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
+                        group_id=group_id,
+                        create_pairs_form=create_pairs_form,
+                        form=invite_user_to_group_form,
                     )
+                )
 
     group_id = request.args.get("group_id")
     message = request.args.get("message")
@@ -508,7 +505,12 @@ def group():
                 alert=alert,
             )
 
-    groups = [i.group for i in current_user.groups]
+    GroupPreview = namedtuple("GroupPreview", "id name avatars members")
+    groups = []
+    for i in current_user.groups:
+        group = i.group
+        avatars = [j.user.avatar_url for j in group.users]
+        groups.append(GroupPreview(group.id, group.name, avatars[:3], len(avatars)))
 
     return render_template(
         "my_groups.html",
@@ -562,9 +564,49 @@ def logout():
     return render_template("login.html", form=form)
 
 
+@app.route("/invite", methods=["GET"])
+def invite():
+    code = request.args.get("code")
+
+    if invite := EmailInvite.query.filter_by(code=code).first():
+        if re.search("\AADMIN-(\d|[A-Z])+\Z", code):
+            group_id = invite.payload["group_id"]
+            # Check if the user is already in the group
+            existing_assoc = GroupsAndUsersAssociation.query.filter_by(
+                group_id=group_id, user_id=current_user.id
+            ).first()
+            if existing_assoc:
+                existing_assoc.group_admin = True
+                existing_assoc.save_to_db(db)
+            else:
+                new_group_assoc = GroupsAndUsersAssociation(
+                    group_id=group_id, user_id=current_user.id, group_admin=True
+                )
+                new_group_assoc.save_to_db(db)
+
+        if re.search("\AGROUP-(\d|[A-Z])+\Z", code):
+            group_id = invite.payload["group_id"]
+            user_id = invite.payload["user_id"]
+            if user_id != current_user.id:
+                return redirect("/profile", message="Wrong invite code used")
+            new_group_assoc = GroupsAndUsersAssociation(
+                group_id=group_id, user_id=current_user.id
+            )
+            new_group_assoc.save_to_db(db)
+
+        invite.delete_from_db(db)
+        return redirect("/groups")
+    else:
+        return redirect(
+            "/profile", message="The invite code is either incorrect or has expired"
+        )
+
+
 @app.route("/register", methods=["POST"])
 def register():
     if current_user.is_authenticated:
+        if next := request.args.get("next"):
+            return redirect(next)
         return redirect("/profile")
 
     form = SignUpForm()
@@ -583,14 +625,9 @@ def register():
             user.save_to_db(db)
             login_user(user)
 
-            invites = EmailInvite.query.filter_by(invited_email=user.email)
-            for invite in invites:
-                new_group_assoc = GroupsAndUsersAssociation(
-                    group_id=invite.group_id, user_id=user.id
-                )
-                new_group_assoc.save_to_db(db)
+            if next := request.args.get("next"):
+                return redirect(next)
 
-                invite.delete_from_db(db)
             else:
                 return redirect("/groups")
         else:
