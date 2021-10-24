@@ -464,6 +464,7 @@ def group():
                 payload={
                     "to_email": to_email,
                     "admin_first_name": admin_first_name,
+                    "invite_code": new_invite.code,
                     "group_name": group_name,
                 },
             )

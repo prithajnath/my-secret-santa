@@ -252,13 +252,17 @@ def _send_secret_santa_email(giver_email, giver_first_name, group_id):
 
 
 @network_exception_retry
-def _invite_user_to_sign_up(to_email, admin_first_name, group_name):
+def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code):
     with app.app_context():
         send_email(
             to=[to_email],
             subject="You've been invited to a secret santa draw!!",
             template_name="secret_santa_invite",
-            payload={"admin_first_name": admin_first_name, "group_name": group_name},
+            payload={
+                "admin_first_name": admin_first_name,
+                "invite_for": f"a secret santa draw for the group {group_name}",
+                "url": f"https://app.mysecretsanta.io/register?next=/invite?code={invite_code}",
+            },
         )
 
 
@@ -365,7 +369,9 @@ def invite_user_to_sign_up(to_email, admin_first_name, group_name):
         task.status = "processing"
         task.save_to_db(db)
 
-        result = _invite_user_to_sign_up(to_email, admin_first_name, group_name)
+        result = _invite_user_to_sign_up(
+            to_email, admin_first_name, group_name, task.payload["invite_code"]
+        )
 
         task.status = "finished"
         task.error = str(result)
