@@ -261,7 +261,7 @@ def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code)
             payload={
                 "admin_first_name": admin_first_name,
                 "invite_for": f"a secret santa draw for the group {group_name}",
-                "url": f"https://app.mysecretsanta.io/register?next=/invite?code={invite_code}",
+                "url": f"https://app.mysecretsanta.io/?next=/invite?code={invite_code}",
             },
         )
 
