@@ -603,7 +603,7 @@ def invite():
         )
 
 
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
         if next := request.args.get("next"):
@@ -611,6 +611,9 @@ def register():
         return redirect("/profile")
 
     form = SignUpForm()
+    if request.method == "GET":
+        return render_template("index.html", form=form)
+
     if form.validate_on_submit():
         username = User.query.filter_by(username=form.username.data).first()
         email = User.query.filter_by(email=form.email.data).first()
