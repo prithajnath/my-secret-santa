@@ -566,11 +566,13 @@ def logout():
 
 
 @app.route("/invite", methods=["GET"])
+@login_required
 def invite():
     code = request.args.get("code")
 
     if invite := EmailInvite.query.filter_by(code=code).first():
         if re.search("\AADMIN-(\d|[A-Z])+\Z", code):
+            # An admin invite can ONLY be fpr someone who is already an user
             group_id = invite.payload["group_id"]
             # Check if the user is already in the group
             existing_assoc = GroupsAndUsersAssociation.query.filter_by(
@@ -586,14 +588,24 @@ def invite():
                 new_group_assoc.save_to_db(db)
 
         if re.search("\AGROUP-(\d|[A-Z])+\Z", code):
+            # A group invite can be for a person who is already a user or someone who is not a user (yet)
             group_id = invite.payload["group_id"]
-            user_id = invite.payload["user_id"]
-            if user_id != current_user.id:
-                return redirect("/profile", message="Wrong invite code used")
-            new_group_assoc = GroupsAndUsersAssociation(
-                group_id=group_id, user_id=current_user.id
-            )
-            new_group_assoc.save_to_db(db)
+            if user_id := invite.payload.get("user_id"):
+                if user_id != current_user.id:
+                    return redirect("/profile", message="Wrong invite code used")
+                new_group_assoc = GroupsAndUsersAssociation(
+                    group_id=group_id, user_id=current_user.id
+                )
+                new_group_assoc.save_to_db(db)
+            else:
+                # This is a new user so we need to find the User object
+                user = User.query.filter_by(email=invite.invited_email).first()
+                if user.id != current_user.id:
+                    return redirect("/profile", message="Wrong invite code used")
+                new_group_assoc = GroupsAndUsersAssociation(
+                    group_id=group_id, user_id=user.id
+                )
+                new_group_assoc.save_to_db(db)
 
         invite.delete_from_db(db)
         return redirect("/groups")

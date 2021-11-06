@@ -129,6 +129,7 @@ class Pair(dbMixin, UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime)
+    channel_id = db.Column(UUID(as_uuid=True), default=uuid4)
     emailed = db.Column(db.Boolean, default=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
     giver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -181,11 +182,12 @@ class Message(dbMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    channel_id = db.Column(UUID(as_uuid=True))
     text = db.Column(db.String(200), unique=False, nullable=True)
     created_at = db.Column(db.DateTime, default=func.current_timestamp())
 
     def __str__(self):
-        return f"{self.created_at}:{self.sender_id} -> {seld.receiver_id}"
+        return f"{self.created_at}:{self.sender_id} -> {self.receiver_id}"
 
 
 class EmailInvite(dbMixin, db.Model):
