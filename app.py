@@ -457,35 +457,68 @@ def group():
             admin_first_name = current_user.first_name
             group_name = group.name
 
-            _task = Task(
-                name="invite_user_to_sign_up",
-                started_at=datetime.now(),
-                status="starting",
-                payload={
-                    "to_email": to_email,
-                    "admin_first_name": admin_first_name,
-                    "invite_code": new_invite.code,
-                    "group_name": group_name,
-                },
-            )
+            if not user:
 
-            _task.save_to_db(db)
-
-            task = celery.send_task(
-                "user.invite_user_to_sign_up",
-                (to_email, admin_first_name, group_name),
-            )
-
-            if task.status == "PENDING":
-                return redirect(
-                    url_for(
-                        ".group",
-                        message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
-                        group_id=group_id,
-                        create_pairs_form=create_pairs_form,
-                        form=invite_user_to_group_form,
-                    )
+                _task = Task(
+                    name="invite_user_to_sign_up",
+                    started_at=datetime.now(),
+                    status="starting",
+                    payload={
+                        "to_email": to_email,
+                        "admin_first_name": admin_first_name,
+                        "invite_code": new_invite.code,
+                        "group_name": group_name,
+                    },
                 )
+
+                _task.save_to_db(db)
+
+                task = celery.send_task(
+                    "user.invite_user_to_sign_up",
+                    (to_email, admin_first_name, group_name),
+                )
+
+                if task.status == "PENDING":
+                    return redirect(
+                        url_for(
+                            ".group",
+                            message=f"{invite_user_to_group_form.email.data} has been invited to create an account and join this group!",
+                            group_id=group_id,
+                            create_pairs_form=create_pairs_form,
+                            form=invite_user_to_group_form,
+                        )
+                    )
+
+            else:
+                _task = Task(
+                    name="invite_user_to_group",
+                    started_at=datetime.now(),
+                    status="starting",
+                    payload={
+                        "to_email": to_email,
+                        "admin_first_name": admin_first_name,
+                        "invite_code": new_invite.code,
+                        "group_name": group_name,
+                    },
+                )
+
+                _task.save_to_db(db)
+
+                task = celery.send_task(
+                    "user.invite_user_to_group",
+                    (to_email, admin_first_name, group_name),
+                )
+
+                if task.status == "PENDING":
+                    return redirect(
+                        url_for(
+                            ".group",
+                            message=f"{invite_user_to_group_form.email.data} has been invited to join this group!",
+                            group_id=group_id,
+                            create_pairs_form=create_pairs_form,
+                            form=invite_user_to_group_form,
+                        )
+                    )
 
     group_id = request.args.get("group_id")
     message = request.args.get("message")

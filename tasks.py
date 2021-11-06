@@ -56,8 +56,8 @@ def send_email(to: str, subject: str, template_name: str, payload: Dict):
         print(response.status_code)
         print(response.content)
         print(response.headers)
-
-    print(f"pretending to send and email to {to}")
+    else:
+        print(f"pretending to send and email to {to}")
 
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
@@ -267,6 +267,21 @@ def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code)
 
 
 @network_exception_retry
+def _invite_user_to_group(to_email, admin_first_name, group_name, invite_code):
+    with app.app_context():
+        send_email(
+            to=[to_email],
+            subject="You've been invited to a secret santa draw!!",
+            template_name="secret_santa_invite",
+            payload={
+                "admin_first_name": admin_first_name,
+                "invite_for": f"a secret santa draw for the group {group_name}",
+                "url": f"https://app.mysecretsanta.io/login?next=/invite?code={invite_code}",
+            },
+        )
+
+
+@network_exception_retry
 def _reset_user_password(email, user):
     with app.app_context():
         import random
@@ -342,6 +357,36 @@ def reset_user_password(email):
         task.save_to_db(db)
 
         result = _reset_user_password(email, user)
+
+        task.status = "finished"
+        task.error = str(result)
+        task.finished_at = datetime.now()
+        task.save_to_db(db)
+
+
+@celery.task(name="user.invite_user_to_group")
+def invite_user_to_group(to_email, admin_first_name, group_name):
+    with app.app_context():
+        task = (
+            Task.query.filter(
+                and_(
+                    Task.payload["to_email"].as_string() == to_email,
+                    Task.payload["admin_first_name"].as_string() == admin_first_name,
+                    Task.payload["group_name"].as_string() == group_name,
+                    Task.name == "invite_user_to_group",
+                    Task.status == "starting",
+                )
+            )
+            .order_by(Task.started_at.desc())
+            .first()
+        )
+
+        task.status = "processing"
+        task.save_to_db(db)
+
+        result = _invite_user_to_group(
+            to_email, admin_first_name, group_name, task.payload["invite_code"]
+        )
 
         task.status = "finished"
         task.error = str(result)
