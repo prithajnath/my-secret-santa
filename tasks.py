@@ -12,6 +12,7 @@ from typing import Tuple, Dict, Optional, Callable, Any, Union
 from random import uniform
 from time import sleep
 from sqlalchemy.types import Unicode
+from uuid import uuid4
 from sqlalchemy import and_
 from requests.exceptions import HTTPError, ConnectionError, Timeout
 from datetime import datetime
@@ -226,6 +227,7 @@ def _make_pairs(pipe={}):
                 receiver=receiver,
                 giver=giver,
                 timestamp=pair_timestamp,
+                channel_id=str(uuid4()),
             )
 
             final_pairs.append(giver.email)

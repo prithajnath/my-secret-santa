@@ -128,6 +128,7 @@ class Pair(dbMixin, UserMixin, db.Model):
     __tablename__ = "pairs"
 
     id = db.Column(db.Integer, primary_key=True)
+    channel_id = db.Column(UUID(as_uuid=True), default=uuid4, unique=True)
     timestamp = db.Column(db.DateTime)
     emailed = db.Column(db.Boolean, default=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
@@ -179,6 +180,7 @@ class Message(dbMixin, db.Model):
     __tablename__ = "messages"
 
     id = db.Column(db.Integer, primary_key=True)
+    pair_channel_id = db.Column(UUID(as_uuid=True), db.ForeignKey("pairs.channel_id"))
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     text = db.Column(db.String(200), unique=False, nullable=True)

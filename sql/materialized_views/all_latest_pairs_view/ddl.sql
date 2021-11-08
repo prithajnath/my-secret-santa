@@ -10,6 +10,7 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
             SELECT latest_timestamps.group_id,
                     giver_id,
                     receiver_id,
+                    channel_id,
                     max_timestamp
             FROM latest_timestamps
             LEFT JOIN pairs 
@@ -21,6 +22,7 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
 
     SELECT
         uuid_generate_v4() AS id,
+        channel_id,
         givers.username AS giver_username,
         receivers.username AS receiver_username,
         max_timestamp AS created_at,

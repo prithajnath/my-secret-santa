@@ -297,19 +297,28 @@ def kick():
 @app.route("/santa", methods=["GET", "POST"])
 @login_required
 def santa():
-    all_groups = [
-        i.group
-        for i in GroupsAndUsersAssociation.query.filter_by(
-            user_id=current_user.id
-        ).all()
-    ]
-    secret_santees = all_latest_pairs_view.query.filter_by(
-        giver_username=current_user.username
+
+    all_pairs = all_latest_pairs_view.query.filter(
+        or_(
+            all_latest_pairs_view._view.giver_username == current_user.username,
+            all_latest_pairs_view._view.receiver_username == current_user.username,
+        )
     ).all()
 
-    return render_template(
-        "santa.html", groups=all_groups, secret_santees=secret_santees
-    )
+    Santa = namedtuple("Santa", "group channel_id")
+    santas = [
+        Santa(Group.query.filter_by(name=i.group_name).first(), i.channel_id)
+        for i in all_pairs
+        if i.receiver_username == current_user.username
+    ]
+    Santee = namedtuple("Santee", "group_name receiver_username channel_id")
+    santees = [
+        Santee(i.group_name, i.receiver_username, i.channel_id)
+        for i in all_pairs
+        if i.giver_username == current_user.username
+    ]
+
+    return render_template("santa.html", santas=santas, santees=santees)
 
 
 @app.route("/groups", methods=["GET", "POST"])
@@ -703,6 +712,7 @@ def index():
 @login_required
 def santee_message():
     to = request.args.get("to")
+    channel_id = request.args.get("channel_id")
 
     santee = User.query.filter_by(username=to).first()
 
@@ -711,6 +721,7 @@ def santee_message():
         new_message = Message(
             sender_id=current_user.id,
             receiver_id=santee.id,
+            pair_channel_id=channel_id,
             text=message,
             created_at=datetime.now(),
         )
@@ -720,34 +731,18 @@ def santee_message():
         return jsonify(result=True)
 
     messages = (
-        db.session.query(User, Message)
-        .select_from(Message)
-        .join(
-            User,
-            and_(
-                Message.sender_id == User.id,
-            ),
-        )
-        .filter(
-            or_(
-                and_(
-                    Message.receiver_id == santee.id,
-                    Message.sender_id == current_user.id,
-                ),
-                and_(
-                    Message.sender_id == santee.id,
-                    Message.receiver_id == current_user.id,
-                ),
-            )
-        )
+        Message.query.filter_by(pair_channel_id=channel_id)
         .order_by(Message.created_at)
         .all()
     )
 
     return jsonify(
         result=[
-            ("receiver" if user == current_user else "sender", message.text)
-            for user, message in messages
+            (
+                "receiver" if message.sender_id == current_user.id else "sender",
+                message.text,
+            )
+            for message in messages
         ]
     )
 
@@ -755,12 +750,10 @@ def santee_message():
 @app.route("/santa_message", methods=["GET", "POST"])
 @login_required
 def santa_message():
-    group_name = request.args.get("group_name")
+    channel_id = request.args.get("channel_id")
 
     secret_santa_for_this_group = (
-        all_latest_pairs_view.query.filter_by(
-            group_name=group_name, receiver_username=current_user.username
-        )
+        all_latest_pairs_view.query.filter_by(channel_id=channel_id)
         .first()
         .giver_username
     )
@@ -772,6 +765,7 @@ def santa_message():
         new_message = Message(
             sender_id=current_user.id,
             receiver_id=secret_santa.id,
+            pair_channel_id=channel_id,
             text=message,
             created_at=datetime.now(),
         )
@@ -781,34 +775,18 @@ def santa_message():
         return jsonify(result=True)
 
     messages = (
-        db.session.query(User, Message)
-        .select_from(Message)
-        .join(
-            User,
-            and_(
-                Message.sender_id == User.id,
-            ),
-        )
+        Message.query.filter_by(pair_channel_id=channel_id)
         .order_by(Message.created_at)
-        .filter(
-            or_(
-                and_(
-                    Message.sender_id == current_user.id,
-                    Message.receiver_id == secret_santa.id,
-                ),
-                and_(
-                    Message.sender_id == secret_santa.id,
-                    Message.receiver_id == current_user.id,
-                ),
-            )
-        )
         .all()
     )
 
     return jsonify(
         result=[
-            ("receiver" if user == current_user else "sender", message.text)
-            for user, message in messages
+            (
+                "receiver" if message.sender_id == current_user.id else "sender",
+                message.text,
+            )
+            for message in messages
         ]
     )
 

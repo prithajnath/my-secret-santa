@@ -24,7 +24,7 @@
 </style>
 <br /><br />
 <div class="container">
-  {% if secret_santees %}
+  {% if santees %}
   <h1 style="font-family: 'Rubik Mono One', sans-serif;"><strong>Your santees</strong></h1>
 
   <p>These are the people whom YOU're supposed to send gifts to.You can view their profiles to get a sense of what
@@ -34,7 +34,7 @@
   <br /><br />
   <div class="row">
 
-    {% for santee in secret_santees %}
+    {% for santee in santees %}
 
     <div class="col-sm">
       <div class="santa-card card" style="width: 18rem; margin-top: 5px;">
@@ -47,7 +47,7 @@
         <div style="display: flex;">
           <button class="santa-button" style="margin: 5px;"><a href="/profile/{{ santee.receiver_username }}">View
               profile</a></button>
-          <button class="santa-button" style="margin: 5px;" data-target="#MessageModal" data-toggle="modal"
+          <button channel_id="{{ santee.channel_id }}" class="santa-button" style="margin: 5px;" data-target="#MessageModal" data-toggle="modal"
             onclick="grabMessagesForUser(this, '{{ santee.receiver_username }}')">Message</button>
           <br />
         </div>
@@ -59,7 +59,7 @@
     {% endif %}
   </div>
 
-  {% if groups %}
+  {% if santas %}
   <br /><br />
   <h1 style="font-family: 'Rubik Mono One', sans-serif;"><strong>Your santas</strong></h1>
   <p>These are the people who are supposed to send you gifts</p>
@@ -72,21 +72,21 @@
   <div class="row">
 
 
-    {% for group in groups %}
+    {% for santa in santas %}
 
     <div class="col-sm">
       <div class="santa-card card" style="width: 18rem; margin-top: 5px;">
         <div class="card-body">
           <h5 class="card-title">
-            <strong>{{ group }}</strong>
+            <strong>{{ santa.group.name }}</strong>
           </h5>
           <p class="santa-username"></p>
         </div>
         <div style="display: flex;">
 
-          <button class="santa-button" style="margin: 5px;" data-toggle="modal" data-target="#MessageModal"
+          <button channel_id="{{ santa.channel_id }}" class="santa-button" style="margin: 5px;" data-toggle="modal" data-target="#MessageModal"
             onclick="grabMessagesForUser(this)">Message</button>
-          {% if group.reveal_latest_pairs %}
+          {% if santa.group.reveal_latest_pairs %}
           <button style="margin: 5px;" onclick="revealSecretSanta(this)" class="santa-button">Reveal</button>
           {% else %}
           <button style="margin: 5px;" class="santa-button" disabled>Reveal</button>
@@ -167,6 +167,7 @@
   async function sendMessageToSanta(target) {
     const csrf_token = "{{ csrf_token() }}";
     const modal = document.querySelector(".modal");
+    const channel_id = modal.getAttribute("channel_id");
     const origin = window.location.origin;
     const group_name = target
       .parentElement
@@ -191,7 +192,7 @@
 
 
     if (username.length === 0) {
-      var url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
+      var url = encodeURI(`${origin}/santa_message?channel_id=${channel_id}`);
       var response = await fetch(url, {
         headers: {
           "X-CSRFToken": csrf_token,
@@ -203,7 +204,7 @@
         })
       });
     } else {
-      var url = encodeURI(`${origin}/santee_message?to=${username}`);
+      var url = encodeURI(`${origin}/santee_message?to=${username}&channel_id=${channel_id}`);
       var response = await fetch(url, {
         headers: {
           "X-CSRFToken": csrf_token,
@@ -230,6 +231,7 @@
     const csrf_token = "{{ csrf_token() }}";
     const origin = window.location.origin;
     const modal = document.querySelector("#MessageModal");
+    const channel_id = target.getAttribute("channel_id");
     const group_name = target
       .parentElement
       .parentElement
@@ -237,7 +239,7 @@
       .innerText;
 
     if (!to) {
-      var url = encodeURI(`${origin}/santa_message?group_name=${group_name}`);
+      var url = encodeURI(`${origin}/santa_message?channel_id=${channel_id}`);
       var response = await fetch(url, {
         headers: {
           "X-CSRFToken": csrf_token,
@@ -250,9 +252,10 @@
       messageContent.innerText = "";
 
       modal.querySelector("h5").innerText = group_name;
+      modal.setAttribute("channel_id", channel_id);
       modal.querySelector("div[class='santee_username']").setAttribute("username", "");
     } else {
-      var url = encodeURI(`${origin}/santee_message?to=${to}`);
+      var url = encodeURI(`${origin}/santee_message?to=${to}&channel_id=${channel_id}`);
       var response = await fetch(url, {
         headers: {
           "X-CSRFToken": csrf_token,
@@ -266,6 +269,7 @@
 
       modal.querySelector("h5").innerText = group_name;
 
+      modal.setAttribute("channel_id", channel_id);
       modal.querySelector("div[class='santee_username']").setAttribute("username", to);
     }
 
