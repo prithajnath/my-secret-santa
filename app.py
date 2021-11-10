@@ -577,6 +577,8 @@ def login():
         if user:
             if user.verify_hash(form.password.data, user.password):
                 login_user(user)
+                user.last_logged_in = datetime.now()
+                user.save_to_db(db)
                 if next := request.args.get("next"):
                     return redirect(next)
                 if user.admin:
@@ -602,6 +604,8 @@ def login():
 @app.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
+    current_user.last_logged_out = datetime.now()
+    current_user.save_to_db(db)
     logout_user()
     form = LoginForm()
     return render_template("login.html", form=form)
@@ -682,6 +686,8 @@ def register():
 
             user.save_to_db(db)
             login_user(user)
+            user.last_logged_in = datetime.now()
+            user.save_to_db(db)
 
             if next := request.args.get("next"):
                 return redirect(next)

@@ -10,6 +10,7 @@ from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid1, uuid4
 from sql.materialized_views import AllAdminView, AllLatestPairsView
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -46,6 +47,12 @@ class User(dbMixin, UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     admin = db.Column(db.Boolean, unique=False, default=False)
     groups = db.relationship("GroupsAndUsersAssociation", backref="_user")
+    last_logged_in = db.Column(db.DateTime, nullable=True)
+    last_logged_out = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=func.current_timestamp())
+    updated_at = db.Column(
+        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+    )
 
     def __init__(
         self,
