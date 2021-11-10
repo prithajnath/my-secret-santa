@@ -294,7 +294,7 @@ def _reset_user_password(email, user):
             chr(random.randint(50, 127)) for _ in range((random.randint(14, 20)))
         ]
         new_password = "".join(
-            [i if i != " " else random.choice(";", "-", "_") for i in _new_password]
+            [i if i != " " else random.choice((";", "-", "_")) for i in _new_password]
         )
         user.set_password(new_password)
         user.save_to_db(db)
