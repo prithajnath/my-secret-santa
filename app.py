@@ -88,6 +88,11 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
+@login_manager.unauthorized_handler
+def unauthorized_callback():
+    return redirect(f"/login?next={request.path}")
+
+
 # Routes
 
 
