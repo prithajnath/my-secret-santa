@@ -290,12 +290,10 @@ def _reset_user_password(email, user):
         from os import getrandom
 
         random.seed(getrandom(100))
-        _new_password = [
-            chr(random.randint(50, 127)) for _ in range((random.randint(14, 20)))
-        ]
         new_password = "".join(
-            [i if i != " " else random.choice((";", "-", "_")) for i in _new_password]
+            [chr(random.randint(33, 126)) for _ in range((random.randint(14, 20)))]
         )
+
         user.set_password(new_password)
         user.save_to_db(db)
         if os.getenv("ENV") == "production":
@@ -307,9 +305,9 @@ def _reset_user_password(email, user):
             )
 
         else:
+            print(new_password)
             # This is just to simulate network errors in a dev environemnt
             requests.get("https://www.mysecretsanta.io/math")
-            print(new_password)
 
 
 @celery.task(name="user.send_secret_santa_email")
