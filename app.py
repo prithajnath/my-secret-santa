@@ -739,6 +739,25 @@ def santee_message():
 
         new_message.save_to_db(db)
 
+        _task = Task(
+            name="send_message_notification",
+            started_at=datetime.now(),
+            status="starting",
+            payload={
+                "sender_id": current_user.id,
+                "receiver_id": santee.id,
+                "channel_id": channel_id,
+                "text": message,
+            },
+        )
+
+        _task.save_to_db(db)
+
+        celery.send_task(
+            "user.send_message_notification",
+            (current_user.id, santee.id, channel_id, message, True),
+        )
+
         return jsonify(result=True)
 
     messages = (
@@ -782,6 +801,25 @@ def santa_message():
         )
 
         new_message.save_to_db(db)
+
+        _task = Task(
+            name="send_message_notification",
+            started_at=datetime.now(),
+            status="starting",
+            payload={
+                "sender_id": current_user.id,
+                "receiver_id": secret_santa.id,
+                "channel_id": channel_id,
+                "text": message,
+            },
+        )
+
+        _task.save_to_db(db)
+
+        celery.send_task(
+            "user.send_message_notification",
+            (current_user.id, secret_santa.id, channel_id, message, False),
+        )
 
         return jsonify(result=True)
 

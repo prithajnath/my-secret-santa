@@ -284,6 +284,33 @@ def _invite_user_to_group(to_email, admin_first_name, group_name, invite_code):
 
 
 @network_exception_retry
+def _send_message_notification(
+    receiver_email, sender_username, receiver_username, group_name, text, anonymous
+):
+    with app.app_context():
+        subject = "You have christmas mail!"
+        if not anonymous:
+            intro = f"Hey @{receiver_username}, you have a new message from @{sender_username} ({group_name})"
+        else:
+            intro = f"Hey @{receiver_username}, you have a new message from your secret santa ({group_name})"
+        if os.getenv("ENV") == "production":
+
+            send_email(
+                to=[receiver_email],
+                subject=subject,
+                template_name="secret_santa_message_notification",
+                payload={
+                    "intro": intro,
+                    "text": text,
+                    "url": f"https://app.mysecretsanta.io/login?next=/santa",
+                },
+            )
+        else:
+            print(intro)
+            print(text)
+
+
+@network_exception_retry
 def _reset_user_password(email, user):
     with app.app_context():
         import random
@@ -308,6 +335,51 @@ def _reset_user_password(email, user):
             print(new_password)
             # This is just to simulate network errors in a dev environemnt
             requests.get("https://www.mysecretsanta.io/math")
+
+
+@celery.task(name="user.send_message_notification")
+def send_message_notification(sender_id, receiver_id, channel_id, text, anonymous):
+    with app.app_context():
+        sender = User.query.filter_by(id=sender_id).first()
+        receiver = User.query.filter_by(id=receiver_id).first()
+        group_name = (
+            all_latest_pairs_view.query.filter_by(channel_id=channel_id)
+            .first()
+            .group_name
+        )
+
+        task = (
+            Task.query.filter(
+                and_(
+                    Task.payload["sender_id"].as_integer() == sender_id,
+                    Task.payload["receiver_id"].as_integer() == receiver_id,
+                    Task.payload["channel_id"].as_string() == channel_id,
+                    Task.payload["text"].as_string() == text,
+                    Task.name == "send_message_notification",
+                    Task.status == "starting",
+                )
+            )
+            .order_by(Task.started_at.desc())
+            .first()
+        )
+
+        task.status = "processing"
+        task.save_to_db(db)
+
+        result = _send_message_notification(
+            receiver.email,
+            sender.username,
+            receiver.username,
+            group_name,
+            text,
+            anonymous,
+        )
+
+        task.status = "finished"
+        if result:
+            task.error = str(result)
+        task.finished_at = datetime.now()
+        task.save_to_db(db)
 
 
 @celery.task(name="user.send_secret_santa_email")
