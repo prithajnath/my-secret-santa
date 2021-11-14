@@ -169,7 +169,7 @@ network_exception_retry = retry(
         HTTPException,
         HTTPServerError,
     ),
-    max_retries=5,
+    max_retries=12,
 )
 
 
