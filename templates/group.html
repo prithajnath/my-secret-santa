@@ -2,6 +2,27 @@
 {% block content %}
 {% import "bootstrap/wtf.html" as wtf %}
 <style>
+  #messageContent {
+    overflow-y: scroll;
+    height: 400px;
+  }
+
+  .sender {
+    text-align: left;
+    background-color: lightgray;
+
+    margin-right: 160px;
+    padding: 15px;
+  }
+
+  .receiver {
+    text-align: right;
+    background-color: #f12933;
+    color: white;
+    margin-left: 47%;
+    padding: 15px;
+  }
+
   .switch {
     position: relative;
     display: inline-block;
@@ -57,6 +78,13 @@
 <div class="container">
   <br /><br />
   <h1 style="font-family: 'Rubik Mono One', sans-serif;"><strong>{{ group.name }}</strong></h1>
+  <a>
+    <svg onclick="grabGroupMessages()" data-toggle="modal" data-target="#MessageModal" style="margin-left: 15px;" width="2em" height="2em" fill="currentColor" class="bi bi-chat-left-quote" viewBox="0 0 16 16">
+      <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+      <path d="M7.066 4.76A1.665 1.665 0 0 0 4 5.668a1.667 1.667 0 0 0 2.561 1.406c-.131.389-.375.804-.777 1.22a.417.417 0 1 0 .6.58c1.486-1.54 1.293-3.214.682-4.112zm4 0A1.665 1.665 0 0 0 8 5.668a1.667 1.667 0 0 0 2.561 1.406c-.131.389-.375.804-.777 1.22a.417.417 0 1 0 .6.58c1.486-1.54 1.293-3.214.682-4.112z"/>
+    </svg>
+  </a>
+
   {% if message %}
   <div class="alert alert-success alert-dismissible fade show" role="alert">
     {{ message }}
@@ -67,25 +95,15 @@
   {% endif %}
   <br /><br />
 
-  {% if group.is_admin(current_user) %}
   <div style="display: flex;">
+
+  {% if group.is_admin(current_user) %}
     <a data-toggle="modal" data-target="#inviteUserToGroup"><svg width="2em" height="2em" viewBox="0 0 16 16"
         class="bi bi-person-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path fill-rule="evenodd"
           d="M8 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm6 5c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10zM13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z" />
       </svg></a>
     <br /><br />
-
-    <a>
-      <svg style="margin-left: 15px;" width="2em" height="2em" viewBox="0 0 16 16" class="bi bi-trash"
-        fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-        <path fill-rule="evenodd"
-          d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
-      </svg>
-    </a>
-
     <a>
       <svg data-toggle="modal" data-target="#CreatePairs" style="margin-left: 15px;" width="2em" height="2em"
         viewBox="0 0 16 16" class="bi bi-diagram-2" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -104,8 +122,8 @@
       </label>
 
 
-  </div>
   {% endif %}
+  </div>
   <div class="row">
 
     <br /><br />
@@ -204,6 +222,31 @@
       </div>
     </div>
 
+
+    <div class="modal fade" id="MessageModal" tabindex="-1" role="dialog" aria-labelledby="MessageModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="MessageModalLabel"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="santee_username" username=""></div>
+            <div id="messageContent" class="container-fluid"></div>
+          </div>
+          <div class="modal-footer">
+            <textarea id="messageText" style="width: 80%;"></textarea>
+            <button onclick="sendMessageToGroup(this)" class="santa-button">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
     <div class="modal fade" id="CreatePairs" tabindex="-1" role="dialog" aria-labelledby="inviteUserToGroupLabel"
       aria-hidden="true">
       <div class="modal-dialog" role="document">
@@ -243,7 +286,83 @@
   const csrf_token = "{{ csrf_token() }}";
   const origin = window.location.origin;
   const group_id = (new URL(window.location.href)).searchParams.get("group_id");
-  const user_id = "{{ current_user.id }}";
+  const current_user_username = "{{ current_user.username }}";
+
+  function createMessageDiv(avatar_url, firstName, type, text){
+    var mainDiv = document.createElement("div");
+
+    mainDiv.innerHTML = type === "sender" ? `
+      <div class="col-xs">
+        <span style="font-size: 12px; color: darkgray; margin-bottom: 3px;"><img src=${avatar_url} style="width: 30px; margin-bottom: 1%;" />${firstName}</span>
+        <p class="${type}">${text}</p>
+      </div>
+    ` : `
+        <p class="${type}">${text}</p>
+    `
+
+    if(type === "sender"){
+      mainDiv.className = "row"
+    }
+    return mainDiv
+
+
+  }
+
+  async function grabGroupMessages(){
+    var url = encodeURI(`${origin}/group_message?group_id=${group_id}`);
+    var response = await fetch(url, {
+      headers: {
+        "X-CSRFToken": csrf_token,
+      },
+    });
+
+    const json = await response.json();
+
+    var messageList = json.result;
+
+    const messageText = document.querySelector("#messageText");
+    const messageContent = document.querySelector("#messageContent");
+    messageContent.innerText = "";
+
+    messageList.forEach(function (content) {
+      ({username, first_name, avatar_url, type, text} = content);
+      messageContent.appendChild(createMessageDiv(avatar_url, first_name, type, text));
+  });
+
+}
+
+  async function sendMessageToGroup(target) {
+    const origin = window.location.origin;
+    const messageText = document.querySelector("#messageText");
+    const messageContent = document.querySelector("#messageContent");
+    var p = document.createElement("p");
+    var textContent = messageText.value;
+    p.innerText = textContent;
+    p.className = "receiver";
+    messageContent.append(p);
+    messageText.value = "";
+
+    var url = encodeURI(`${origin}/group_message?group_id=${group_id}`);
+    var response = await fetch(url, {
+      headers: {
+        "X-CSRFToken": csrf_token,
+        "Content-Type": "application/json;charset=utf-8"
+      },
+      method: "POST",
+      body: JSON.stringify({
+        message: textContent
+      })
+    });
+
+    const json = await response.json();
+
+    document.querySelector("#messageContent")
+      .scrollTo(0,
+        document.querySelector("#messageContent").scrollHeight
+      )
+
+  }
+
 
   async function toggleRevealButton(target) {
     async function toggle(action) {

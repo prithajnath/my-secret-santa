@@ -13,6 +13,7 @@ from models import (
     GroupPairReveals,
     EmailInvite,
     Message,
+    GroupMessage,
     PasswordReset,
     all_admin_materialized_view,
     all_latest_pairs_view,
@@ -717,6 +718,45 @@ def index():
 
 
 # JSON endpoints
+
+
+@app.route("/group_message", methods=["GET", "POST"])
+@login_required
+def group_message():
+    group_id = request.args.get("group_id")
+    if request.method == "POST":
+        message = request.json.get("message")
+        new_message = GroupMessage(
+            group_id=group_id,
+            sender_id=current_user.id,
+            text=message,
+            created_at=datetime.now(),
+        )
+
+        new_message.save_to_db(db)
+
+        return jsonify(result=True)
+
+    all_messages = (
+        GroupMessage.query.filter_by(group_id=group_id)
+        .order_by(GroupMessage.created_at)
+        .all()
+    )
+
+    return jsonify(
+        result=[
+            {
+                "username": message.sender.username,
+                "avatar_url": message.sender.avatar_url,
+                "first_name": message.sender.first_name,
+                "type": "receiver"
+                if current_user.username == message.sender.username
+                else "sender",
+                "text": message.text,
+            }
+            for message in all_messages
+        ]
+    )
 
 
 @app.route("/santee_message", methods=["GET", "POST"])

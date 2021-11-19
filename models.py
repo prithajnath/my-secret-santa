@@ -115,6 +115,23 @@ class Group(dbMixin, UserMixin, db.Model):
     __repr__ = __str__
 
 
+class GroupMessage(dbMixin, UserMixin, db.Model):
+    __tablename__ = "group_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))
+    group = db.relationship("Group")
+    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    sender = db.relationship("User")
+    text = db.Column(db.String(200), unique=False, nullable=True)
+    created_at = db.Column(db.DateTime)
+
+    def __str__(self):
+        return f"{self.group.name} -> {self.created_at}"
+
+    __repr__ = __str__
+
+
 class GroupPairReveals(dbMixin, db.Model):
     __tablename__ = "group_pair_reveals"
 
