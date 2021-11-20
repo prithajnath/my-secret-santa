@@ -337,30 +337,33 @@
     const messageContent = document.querySelector("#messageContent");
     var p = document.createElement("p");
     var textContent = messageText.value;
-    p.innerText = textContent;
-    p.className = "receiver";
-    messageContent.append(p);
-    messageText.value = "";
 
-    var url = encodeURI(`${origin}/group_message?group_id=${group_id}`);
-    var response = await fetch(url, {
-      headers: {
-        "X-CSRFToken": csrf_token,
-        "Content-Type": "application/json;charset=utf-8"
-      },
-      method: "POST",
-      body: JSON.stringify({
-        message: textContent
-      })
-    });
+    if(textContent.length > 0 && textContent.replace(/(\n| )+/, '').length > 0){
+      p.innerText = textContent;
+      p.className = "receiver";
+      messageContent.append(p);
+      messageText.value = "";
 
-    const json = await response.json();
+      var url = encodeURI(`${origin}/group_message?group_id=${group_id}`);
+      var response = await fetch(url, {
+        headers: {
+          "X-CSRFToken": csrf_token,
+          "Content-Type": "application/json;charset=utf-8"
+        },
+        method: "POST",
+        body: JSON.stringify({
+          message: textContent
+        })
+      });
 
-    document.querySelector("#messageContent")
-      .scrollTo(0,
-        document.querySelector("#messageContent").scrollHeight
-      )
+      const json = await response.json();
 
+      document.querySelector("#messageContent")
+        .scrollTo(0,
+          document.querySelector("#messageContent").scrollHeight
+        )
+
+    }
   }
 
 

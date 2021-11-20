@@ -123,7 +123,7 @@ class GroupMessage(dbMixin, UserMixin, db.Model):
     group = db.relationship("Group")
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     sender = db.relationship("User")
-    text = db.Column(db.String(200), unique=False, nullable=True)
+    text = db.Column(db.Text, unique=False, nullable=True)
     created_at = db.Column(db.DateTime)
 
     def __str__(self):
@@ -207,7 +207,7 @@ class Message(dbMixin, db.Model):
     pair_channel_id = db.Column(UUID(as_uuid=True), db.ForeignKey("pairs.channel_id"))
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    text = db.Column(db.String(200), unique=False, nullable=True)
+    text = db.Column(db.Text, unique=False, nullable=True)
     created_at = db.Column(db.DateTime, default=func.current_timestamp())
 
     def __str__(self):
