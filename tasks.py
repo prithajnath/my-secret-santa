@@ -311,6 +311,30 @@ def _send_message_notification(
 
 
 @network_exception_retry
+def _send_group_chat_notification(
+    receiver_email, sender_username, receiver_username, group_name, text, group_id
+):
+    with app.app_context():
+        subject = "You have christmas mail from your group!"
+        intro = f"Hey @{receiver_username}, @{sender_username} sent a new message in the group chat! ({group_name})"
+        if os.getenv("ENV") == "production":
+
+            send_email(
+                to=[receiver_email],
+                subject=subject,
+                template_name="secret_santa_message_notification",
+                payload={
+                    "intro": intro,
+                    "text": text,
+                    "url": f"https://app.mysecretsanta.io/login?next=/groups?group_id={group_id}",
+                },
+            )
+        else:
+            print(intro)
+            print(text)
+
+
+@network_exception_retry
 def _reset_user_password(email, user):
     with app.app_context():
         import random
@@ -335,6 +359,113 @@ def _reset_user_password(email, user):
             print(new_password)
             # This is just to simulate network errors in a dev environemnt
             requests.get("https://www.mysecretsanta.io/math")
+
+
+@celery.task(name="user.send_group_chat_notifications")
+def send_group_chat_notifications(sender_username, text, group_id):
+    with app.app_context():
+        group = Group.query.filter_by(id=group_id).first()
+
+        _task = (
+            Task.query.filter(
+                and_(
+                    Task.name == "send_group_chat_notifications",
+                    Task.payload["sender_username"].as_string() == sender_username,
+                    Task.payload["text"].as_string() == text,
+                    Task.payload["group_id"].as_integer() == group_id,
+                    Task.status == "starting",
+                )
+            )
+            .order_by(Task.started_at.desc())
+            .first()
+        )
+
+        _task.status = "processing"
+        _task.save_to_db(db)
+
+        # TODO: @prithajnath Need a context manager to retry this block
+        error = None
+        try:
+            for user_association in group.users:
+                user = user_association.user
+                receiver_username = user.username
+                receiver_email = user.email
+                if sender_username != user.username:
+                    task = Task(
+                        name="send_group_chat_notification",
+                        started_at=datetime.now(),
+                        status="starting",
+                        payload={
+                            "receiver_email": receiver_email,
+                            "receiver_username": receiver_username,
+                            "sender_username": sender_username,
+                            "group_name": group.name,
+                            "text": text,
+                        },
+                    )
+
+                    task.save_to_db(db)
+
+                    app_celery.send_task(
+                        "user.send_group_chat_notification",
+                        (
+                            receiver_email,
+                            receiver_username,
+                            sender_username,
+                            group.name,
+                            text,
+                        ),
+                    )
+        except Exception as e:
+            error = str(e)
+
+        _task.status = "finished"
+        if error:
+            _task.error = error
+        _task.finished_at = datetime.now()
+        _task.save_to_db(db)
+
+
+@celery.task(name="user.send_group_chat_notification")
+def send_group_chat_notification(
+    receiver_email, receiver_username, sender_username, group_name, text
+):
+    with app.app_context():
+        task = (
+            Task.query.filter(
+                and_(
+                    Task.name == "send_group_chat_notification",
+                    Task.payload["receiver_email"].as_string() == receiver_email,
+                    Task.payload["receiver_email"].as_string() == receiver_email,
+                    Task.payload["sender_username"].as_string() == sender_username,
+                    Task.payload["group_name"].as_string() == group_name,
+                    Task.payload["text"].as_string() == text,
+                    Task.status == "starting",
+                )
+            )
+            .order_by(Task.started_at.desc())
+            .first()
+        )
+
+        task.status = "processing"
+        task.save_to_db(db)
+
+        group_id = Group.query.filter_by(name=group_name).first().id
+
+        result = _send_group_chat_notification(
+            receiver_email,
+            sender_username,
+            receiver_username,
+            group_name,
+            text,
+            group_id,
+        )
+
+        task.status = "finished"
+        if result:
+            task.error = str(result)
+        task.finished_at = datetime.now()
+        task.save_to_db(db)
 
 
 @celery.task(name="user.send_message_notification")

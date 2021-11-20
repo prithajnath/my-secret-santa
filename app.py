@@ -735,6 +735,24 @@ def group_message():
 
         new_message.save_to_db(db)
 
+        task = Task(
+            name="send_group_chat_notifications",
+            started_at=datetime.now(),
+            status="starting",
+            payload={
+                "sender_username": current_user.username,
+                "text": message,
+                "group_id": group_id,
+            },
+        )
+
+        task.save_to_db(db)
+
+        celery.send_task(
+            "user.send_group_chat_notifications",
+            (current_user.username, message, group_id),
+        )
+
         return jsonify(result=True)
 
     all_messages = (
