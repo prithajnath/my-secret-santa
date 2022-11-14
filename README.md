@@ -65,12 +65,12 @@ EDIT: I migrated to an L7 load balancer so I could do HTTPS redirects, which cau
 Before gevent
 
 ```
-loadtest  -n 1000 -c 6 -k https://www.mysecretsanta.io
+loadtest  -n 1000 -c 6 -k https://app.mysecretsanta.io
 ```
 
 ```
 INFO 
-INFO Target URL:          https://www.mysecretsanta.io
+INFO Target URL:          https://app.mysecretsanta.io
 INFO Max requests:        10000
 INFO Concurrency level:   6
 INFO Agent:               keepalive
@@ -93,13 +93,13 @@ INFO  100%      1066 ms (longest request)
 After gevent
 
 ```
-loadtest -n 1000 -c 100 -k https://www.mysecretsanta.io
+loadtest -n 1000 -c 100 -k https://app.mysecretsanta.io
 ```
 
 ```
 INFO Requests: 0 (0%), requests per second: 0, mean latency: 0 ms
 INFO 
-INFO Target URL:          https://www.mysecretsanta.io
+INFO Target URL:          https://app.mysecretsanta.io
 INFO Max requests:        1000
 INFO Concurrency level:   100
 INFO Agent:               keepalive
