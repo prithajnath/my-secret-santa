@@ -15,7 +15,7 @@ jobs:
       SENDGRID_INVITE_TEMPLATE_ID: ${{ secrets.SENDGRID_INVITE_TEMPLATE_ID }}
       SENDGRID_PAIR_TEMPLATE_ID: ${{ secrets.SENDGRID_PAIR_TEMPLATE_ID }}
       SENDGRID_RESET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_RESET_PASSWORD_TEMPLATE_ID }}
-    runs-on: [ self-hosted, aws-ec2-private ]
+    runs-on: [ self-hosted ]
     steps:
       - uses: actions/checkout@v2
       - run: ./jobs/build_container_image.sh 
@@ -31,7 +31,7 @@ jobs:
       SENDGRID_PAIR_TEMPLATE_ID: ${{ secrets.SENDGRID_PAIR_TEMPLATE_ID }}
       SENDGRID_RESET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_RESET_PASSWORD_TEMPLATE_ID }}
     needs: build_container_image
-    runs-on: [ self-hosted, aws-ec2-private ]
+    runs-on: [ self-hosted ]
     steps:
       - uses: actions/checkout@v2
       - run: ./jobs/deploy_all_services.sh
