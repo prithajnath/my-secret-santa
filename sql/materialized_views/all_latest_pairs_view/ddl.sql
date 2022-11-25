@@ -6,7 +6,7 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
             d.name AS group_name, 
             a.channel_id,
             a.timestamp AS created_at,
-            rank() OVER (PARTITION BY group_id ORDER BY timestamp DESC) AS r 
+            RANK() OVER (PARTITION BY group_id ORDER BY timestamp DESC) AS r 
         FROM 
             pairs a 
         LEFT JOIN 
