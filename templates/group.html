@@ -79,9 +79,12 @@
   <br /><br />
   <h1 style="font-family: 'Rubik Mono One', sans-serif;"><strong>{{ group.name }}</strong></h1>
   <a>
-    <svg onclick="grabGroupMessages()" data-toggle="modal" data-target="#MessageModal" style="margin-left: 15px;" width="2em" height="2em" fill="currentColor" class="bi bi-chat-left-quote" viewBox="0 0 16 16">
-      <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-      <path d="M7.066 4.76A1.665 1.665 0 0 0 4 5.668a1.667 1.667 0 0 0 2.561 1.406c-.131.389-.375.804-.777 1.22a.417.417 0 1 0 .6.58c1.486-1.54 1.293-3.214.682-4.112zm4 0A1.665 1.665 0 0 0 8 5.668a1.667 1.667 0 0 0 2.561 1.406c-.131.389-.375.804-.777 1.22a.417.417 0 1 0 .6.58c1.486-1.54 1.293-3.214.682-4.112z"/>
+    <svg onclick="grabGroupMessages()" data-toggle="modal" data-target="#MessageModal" style="margin-left: 15px;"
+      width="2em" height="2em" fill="currentColor" class="bi bi-chat-left-quote" viewBox="0 0 16 16">
+      <path
+        d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
+      <path
+        d="M7.066 4.76A1.665 1.665 0 0 0 4 5.668a1.667 1.667 0 0 0 2.561 1.406c-.131.389-.375.804-.777 1.22a.417.417 0 1 0 .6.58c1.486-1.54 1.293-3.214.682-4.112zm4 0A1.665 1.665 0 0 0 8 5.668a1.667 1.667 0 0 0 2.561 1.406c-.131.389-.375.804-.777 1.22a.417.417 0 1 0 .6.58c1.486-1.54 1.293-3.214.682-4.112z" />
     </svg>
   </a>
 
@@ -97,7 +100,7 @@
 
   <div style="display: flex;">
 
-  {% if group.is_admin(current_user) %}
+    {% if group.is_admin(current_user) %}
     <a data-toggle="modal" data-target="#inviteUserToGroup"><svg width="2em" height="2em" viewBox="0 0 16 16"
         class="bi bi-person-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path fill-rule="evenodd"
@@ -112,17 +115,17 @@
       </svg>
     </a>
 
-      <label class="switch">
-        {% if group.reveal_latest_pairs %}
-        <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
-        {% else %}
-        <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
-        {% endif %}
-        <span style="border-radius: 3px;" class="slider"></span>
-      </label>
+    <label class="switch">
+      {% if group.reveal_latest_pairs %}
+      <input id="revealToggle" type="checkbox" checked onclick="toggleRevealButton(this)">
+      {% else %}
+      <input id="revealToggle" type="checkbox" onclick="toggleRevealButton(this)">
+      {% endif %}
+      <span style="border-radius: 3px;" class="slider"></span>
+    </label>
 
 
-  {% endif %}
+    {% endif %}
   </div>
   <div class="row">
 
@@ -130,8 +133,7 @@
     {% for i in group.users %}
     <div class="col-sm">
       <div class="santa-card card" style="width: 18rem;">
-        <img class="card-img-top" src={{ i.user.avatar_url }}
-          alt="Card image cap">
+        <img class="card-img-top" src={{ i.user.avatar_url }} alt="Card image cap">
         <div class="card-body">
           <h5 class="card-title">
             {% if group.is_admin(i.user) %}
@@ -288,7 +290,7 @@
   const group_id = (new URL(window.location.href)).searchParams.get("group_id");
   const current_user_username = "{{ current_user.username }}";
 
-  function createMessageDiv(avatar_url, firstName, type, text){
+  function createMessageDiv(avatar_url, firstName, type, text) {
     var mainDiv = document.createElement("div");
 
     mainDiv.innerHTML = type === "sender" ? `
@@ -300,7 +302,7 @@
         <p class="${type}">${text}</p>
     `
 
-    if(type === "sender"){
+    if (type === "sender") {
       mainDiv.className = "row"
     }
     return mainDiv
@@ -308,7 +310,7 @@
 
   }
 
-  async function grabGroupMessages(){
+  async function grabGroupMessages() {
     var url = encodeURI(`${origin}/group_message?group_id=${group_id}`);
     var response = await fetch(url, {
       headers: {
@@ -325,11 +327,11 @@
     messageContent.innerText = "";
 
     messageList.forEach(function (content) {
-      ({username, first_name, avatar_url, type, text} = content);
+      ({ username, first_name, avatar_url, type, text } = content);
       messageContent.appendChild(createMessageDiv(avatar_url, first_name, type, text));
-  });
+    });
 
-}
+  }
 
   async function sendMessageToGroup(target) {
     const origin = window.location.origin;
@@ -338,7 +340,7 @@
     var p = document.createElement("p");
     var textContent = messageText.value;
 
-    if(textContent.length > 0 && textContent.replace(/(\n| )+/, '').length > 0){
+    if (textContent.length > 0 && textContent.replace(/(\n| )+/, '').length > 0) {
       p.innerText = textContent;
       p.className = "receiver";
       messageContent.append(p);
@@ -377,7 +379,6 @@
           "Content-Type": "application/json;charset=utf-8"
         },
         body: JSON.stringify({
-          user_id: user_id,
           action: action,
           group_id: group_id
         })

@@ -899,6 +899,7 @@ def santa_message():
 
 
 @app.route("/reveal_toggle", methods=["POST"])
+@login_required
 def reveal_group_santas():
     group_id = request.json.get("group_id")
     action = request.json.get("action")
