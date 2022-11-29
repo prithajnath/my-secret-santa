@@ -1,48 +1,29 @@
 CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
-    WITH all_latest_pairs AS (
-        WITH latest_timestamps AS 
-            (
-                SELECT max(timestamp) AS max_timestamp,
-                group_id
-                FROM pairs
-                GROUP BY  group_id
-            )
-            SELECT latest_timestamps.group_id,
-                    giver_id,
-                    receiver_id,
-                    channel_id,
-                    max_timestamp
-            FROM latest_timestamps
-            LEFT JOIN pairs 
-                ON 
-                    pairs.group_id = latest_timestamps.group_id
-                AND
-                    pairs.timestamp = latest_timestamps.max_timestamp
-    )
-
-    SELECT
+    WITH cte1 AS (
+        SELECT 
+            c.username AS giver_username, 
+            b.username AS receiver_username, 
+            d.name AS group_name, 
+            a.channel_id,
+            a.timestamp AS created_at,
+            RANK() OVER (PARTITION BY group_id ORDER BY timestamp DESC) AS r 
+        FROM 
+            pairs a 
+        LEFT JOIN 
+            users b 
+        ON a.receiver_id = b.id 
+        LEFT JOIN users c 
+        ON a.giver_id = c.id 
+        LEFT JOIN groups d 
+        ON a.group_id = d.id
+    ) SELECT 
         uuid_generate_v4() AS id,
+        giver_username, 
+        receiver_username, 
         channel_id,
-        givers.username AS giver_username,
-        receivers.username AS receiver_username,
-        max_timestamp AS created_at,
-        name as group_name
-    FROM
-        all_latest_pairs
-    LEFT JOIN
-        users AS givers
-            ON
-                givers.id = all_latest_pairs.giver_id
-    LEFT JOIN
-        groups
-            ON
-                groups.id = all_latest_pairs.group_id
-    LEFT JOIN
-        users AS receivers
-            ON
-                receivers.id = all_latest_pairs.receiver_id
-
-
+        created_at,
+        group_name 
+    FROM cte1 WHERE r = 1;
 );
 
 CREATE UNIQUE INDEX ON all_latest_pairs_view (id);
