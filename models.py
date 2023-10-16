@@ -82,7 +82,7 @@ class User(dbMixin, UserMixin, db.Model):
 
     @property
     def avatar_url(self):
-        return f"https://avatars.dicebear.com/api/croodles/{self.username}.svg"
+        return f"https://api.dicebear.com/7.x/adventurer/svg?seed={self.username}"
 
     def __str__(self):
         return self.email
