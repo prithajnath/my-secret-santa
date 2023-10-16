@@ -1,3 +1,4 @@
+import logging
 import os
 import sendgrid
 import json
@@ -39,6 +40,9 @@ celery.conf.task_routes = {
 }
 
 
+logger = logging.getLogger(__name__)
+
+
 def send_email(to: str, subject: str, template_name: str, payload: Dict):
     if os.getenv("ENV") == "production":
         domain_name = "www.mysecretsanta.io"
@@ -54,11 +58,11 @@ def send_email(to: str, subject: str, template_name: str, payload: Dict):
             },
         )
 
-        print(response.status_code)
-        print(response.content)
-        print(response.headers)
+        logger.info(response.status_code)
+        logger.info(response.content)
+        logger.info(response.headers)
     else:
-        print(f"pretending to send and email to {to}")
+        logger.info(f"pretending to send and email to {to}")
 
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
@@ -110,7 +114,7 @@ def retry(exceptions: Tuple, max_retries: int = 3):
                         """
                         )
                     else:
-                        backoff_interval = 2 ** retries
+                        backoff_interval = 2**retries
                         jitter = uniform(1, 2)
                         total_backoff = backoff_interval + jitter
                         sys.stderr.write(
@@ -143,7 +147,7 @@ def retry(exceptions: Tuple, max_retries: int = 3):
                         """
                         )
                     else:
-                        backoff_interval = 2 ** retries
+                        backoff_interval = 2**retries
                         jitter = uniform(1, 2)
                         total_backoff = backoff_interval + jitter
                         sys.stderr.write(
@@ -191,9 +195,9 @@ async def _make_pairs_async(pipe={}):
             return number
 
         async def add_weight_to_user(user, session):
-            print(f"Grabbing random number for {user}")
+            logger.info(f"Grabbing random number for {user}")
             random_number = await grab_random_number_for_user(session)
-            print(f"The quantuam random machine said {random_number}")
+            logger.info(f"The quantuam random machine said {random_number}")
             weighted_set.append((user, random_number))
 
         async with ClientSession() as session:
@@ -203,7 +207,7 @@ async def _make_pairs_async(pipe={}):
                     user = user_association.user
                     tasks.append(add_weight_to_user(user, session))
                 else:
-                    print(
+                    logger.info(
                         f"Skipping user {user_association.user} because they chose not to participate"
                     )
             await asyncio.gather(*tasks)
@@ -294,7 +298,6 @@ def _send_message_notification(
         else:
             intro = f"Hey @{receiver_username}, you have a new message from your secret santa ({group_name})"
         if os.getenv("ENV") == "production":
-
             send_email(
                 to=[receiver_email],
                 subject=subject,
@@ -306,8 +309,8 @@ def _send_message_notification(
                 },
             )
         else:
-            print(intro)
-            print(text)
+            logger.info(intro)
+            logger.info(text)
 
 
 @network_exception_retry
@@ -318,7 +321,6 @@ def _send_group_chat_notification(
         subject = "You have christmas mail from your group!"
         intro = f"Hey @{receiver_username}, @{sender_username} sent a new message in the group chat! ({group_name})"
         if os.getenv("ENV") == "production":
-
             send_email(
                 to=[receiver_email],
                 subject=subject,
@@ -330,8 +332,8 @@ def _send_group_chat_notification(
                 },
             )
         else:
-            print(intro)
-            print(text)
+            logger.info(intro)
+            logger.info(text)
 
 
 @network_exception_retry
@@ -356,7 +358,7 @@ def _reset_user_password(email, user):
             )
 
         else:
-            print(new_password)
+            logger.info(new_password)
             # This is just to simulate network errors in a dev environemnt
             requests.get("https://www.mysecretsanta.io/math")
 
