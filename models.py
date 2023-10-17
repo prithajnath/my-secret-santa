@@ -19,6 +19,12 @@ all_admin_materialized_view = AllAdminView(db)
 all_latest_pairs_view = AllLatestPairsView(db)
 
 
+class OAuthProviderEnum(Enum):
+    GOOGLE = 0
+    GITHUB = 1
+    GITLAB = 2
+
+
 class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
     __tablename__ = "groups_and_users"
 
@@ -88,6 +94,19 @@ class User(dbMixin, UserMixin, db.Model):
         return self.email
 
     __repr__ = __str__
+
+
+class UserOAuthProfile(dbMixin, db.Model):
+    __tablename__ = "user_oauth_profiles"
+
+    id = db.Column(db.Text, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    vendor = db.Column(db.Enum(OAuthProviderEnum), nullable=False)
+    avatar_url = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=func.current_timestamp())
+    last_logged_in = db.Column(
+        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+    )
 
 
 class Group(dbMixin, UserMixin, db.Model):

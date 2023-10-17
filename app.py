@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, render_template, request, redirect, jsonify, url_for
 from flask_wtf.csrf import CSRFProtect
 from collections import namedtuple
@@ -15,6 +16,8 @@ from models import (
     Message,
     GroupMessage,
     PasswordReset,
+    UserOAuthProfile,
+    OAuthProviderEnum,
     all_admin_materialized_view,
     all_latest_pairs_view,
 )
@@ -50,6 +53,7 @@ import re
 import hashlib
 from datetime import datetime
 from random import choices
+from lib.oauth.google import Google
 from sql import AdvisoryLock
 import maya
 
@@ -83,6 +87,15 @@ csrf.init_app(app)
 
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
+logger = logging.getLogger(__name__)
+
+OAUTH_CLIENTS = {
+    "google": Google(
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+    )
+}
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -95,6 +108,67 @@ def unauthorized_callback():
 
 
 # Routes
+
+
+@app.route("/google_oauth", methods=["GET", "POST"])
+def google_oauth():
+    code = request.args.get("code")
+    google_oauth_client = OAUTH_CLIENTS["google"]
+    google_user = google_oauth_client.user_data(code=code)
+    email = google_user["email"]
+    logger.info(google_user)
+
+    # Check if we have a user with this email in the first place
+    if user := User.query.filter_by(email=email).first():
+        # They have logged in with Google befrore
+        if user_google_profile := UserOAuthProfile.query.filter_by(
+            user_id=user.id, vendor=OAuthProviderEnum.GOOGLE
+        ).first():
+            # If they have, check their avatar_url and log them in
+            if user_google_profile.avatar_url != google_user["avatar_url"]:
+                user_google_profile.avatar_url = google_user["avatar_url"]
+            user_google_profile.save_to_db(db)  # This is to update last_logged_in
+
+            login_user(user)
+            return redirect("/")
+        else:
+            # They're signing up/logging in with Google for the first time
+            user_google_profile = UserOAuthProfile(
+                user_id=user.id,
+                id=google_user["id"],
+                avatar_url=google_user["avatar_url"],
+                vendor=OAuthProviderEnum.GOOGLE,
+            )
+
+            user_google_profile.save_to_db(db)
+
+            login_user(user)
+
+            return redirect("/")
+
+    # If we don't recognize this user,
+    # we can create a new account without a password because Google has already authenticated them
+    user = User(
+        email=email,
+    )
+
+    user.username = google_user["first_name"]
+    user.first_name = google_user["first_name"]
+    user.last_name = google_user["last_name"]
+    user.save_to_db(db)
+
+    user_google_profile = UserOAuthProfile(
+        user_id=user.id,
+        id=google_user["id"],
+        avatar_url=google_user["avatar_url"],
+        vendor="Google",
+    )
+
+    user_google_profile.save_to_db(db)
+
+    login_user(user)
+
+    return redirect("/")
 
 
 @app.route("/reset_password", methods=["GET", "POST"])
@@ -176,7 +250,6 @@ def reset_password():
                         "reset_password.html", form=form, message=message
                     )
                 else:
-
                     for attempt in password_reset_attempts:
                         attempt.delete_from_db(db)
 
@@ -185,7 +258,6 @@ def reset_password():
                     ).grab_lock() as locked_session:
                         lock, session = locked_session
                         if lock:
-
                             new_attempt = Task(
                                 payload={
                                     "name": "reset_user_password",
@@ -303,7 +375,6 @@ def kick():
 @app.route("/santa", methods=["GET", "POST"])
 @login_required
 def santa():
-
     all_pairs = all_latest_pairs_view.query.filter(
         or_(
             all_latest_pairs_view._view.giver_username == current_user.username,
@@ -372,8 +443,8 @@ def group():
             and leave_group_form.validate()
         ):
             group_name = leave_group_form.group_name.data
-            print(leave_group_form)
-            print(group_name)
+            logger.info(leave_group_form)
+            logger.info(group_name)
             group = Group.query.filter_by(name=group_name).first()
 
             group_assoc_with_user = GroupsAndUsersAssociation.query.filter_by(
@@ -386,9 +457,9 @@ def group():
             create_pairs_form.submit_create_pairs_form.data
             and create_pairs_form.validate()
         ):
-            print(create_pairs_form.submit_create_pairs_form.data)
+            logger.info(create_pairs_form.submit_create_pairs_form.data)
             group_id = request.args.get("group_id")
-            print(f"Creating pairs for {group_id}")
+            logger.info(f"Creating pairs for {group_id}")
             group = Group.query.filter_by(id=group_id).first()
 
             currently_running_creation_attempt = PairCreationStatus.query.filter_by(
@@ -408,7 +479,6 @@ def group():
             delta = today - pair_latest_timestamp
             if delta.days > 1:
                 if group.is_admin(current_user) and current_user.is_authenticated:
-
                     with AdvisoryLock(
                         engine=db.engine, lock_key=group.name
                     ).grab_lock() as locked_session:
@@ -473,7 +543,6 @@ def group():
             group_name = group.name
 
             if not user:
-
                 _task = Task(
                     name="invite_user_to_sign_up",
                     started_at=datetime.now(),
@@ -604,7 +673,14 @@ def login():
             )
     message = request.args.get("message")
 
-    return render_template("login.html", message=message, form=form)
+    google_oauth_client = OAUTH_CLIENTS["google"]
+
+    return render_template(
+        "login.html",
+        message=message,
+        form=form,
+        oauth_url=google_oauth_client.oauth_url,
+    )
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -940,4 +1016,8 @@ def reveal_secret_santa():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=9000, use_reloader=True)
+    if os.getenv("ENV") != "production":
+        ssl_context = ("cert.pem", "key.pem")
+        app.run(host="0.0.0.0", port=9000, ssl_context=ssl_context, use_reloader=True)
+    else:
+        app.run(host="0.0.0.0", port=9000, use_reloader=True)
