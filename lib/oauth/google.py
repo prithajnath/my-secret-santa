@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 SITE_DOMAIN = "mysecretsanta.io"
 
 ORIGIN = (
-    f"https://www.{SITE_DOMAIN}"
+    f"https://app.{SITE_DOMAIN}"
     if os.getenv("ENV") == "production"
     else f"https://dev.{SITE_DOMAIN}:9100"
 )
