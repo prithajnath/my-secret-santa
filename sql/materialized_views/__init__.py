@@ -1,8 +1,11 @@
+import logging
 from sqlalchemy.exc import ProgrammingError, NoSuchTableError
 from sqlalchemy.schema import Table, MetaData
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from functools import cached_property
+
+logger = logging.getLogger(__name__)
 
 
 class MaterializedView:
@@ -16,12 +19,12 @@ class MaterializedView:
             self.conn.engine.execute(self.ddl)
         except ProgrammingError as e:
             if f"relation '{self.name}'already exists" in e.__str__():
-                print(
+                logger.info(
                     f"Materialized view {self.name} already exists. Skipping creation"
                 )
 
     def refresh(self):
-        print(f"refreshing materialized view {self.name}")
+        logger.info(f"refreshing materialized view {self.name}")
         with self.conn.engine.begin() as connection:
             connection.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {self.name}")
 
