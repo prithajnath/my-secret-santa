@@ -1,12 +1,19 @@
+from datetime import datetime
+import logging
 from app import app, db
-from models import User, Pair, Group, GroupsAndUsersAssociation
+from models import Task, User, Pair, Group, GroupsAndUsersAssociation
 from uuid import uuid4
 from random import choice
 from time import sleep
 from celery import Celery
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func, select
 
 import pytest
 import os
+
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -93,10 +100,28 @@ def group(users):
 def pairs(group):
     with app.app_context():
         celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
-        task = celery.send_task("pair.create", (group.id,))
+        task_entry = Task(
+            started_at=datetime.now(),
+            name="create_pairs",
+            payload={
+                "group_id": group.id,
+                "initiator_id": "",
+            },
+            status="starting",
+        )
 
-        while task.status == "PENDING":
-            sleep(5)
+        task_entry.save_to_db(db)
+
+        task = celery.send_task("pair.create_pairs", (group.id,))
+
+        if task.status == "FAILURE":
+            raise ValueError(f"Something went wrong {task.result}")
+
+        while True:
+            if task.status == "PENDING":
+                sleep(5)
+            else:
+                break
 
         pairs = [*Pair.query.filter_by(group_id=group.id)]
         pair_ids = [pair.id for pair in pairs]
@@ -109,13 +134,11 @@ def pairs(group):
 
 
 def test_all_members_have_been_paired(pairs):
-
     group = pairs[0].group
     assert len(pairs) == len(group.users)
 
 
 def test_no_one_is_their_own_secret_santa(pairs):
-
     for pair in pairs:
         giver, receiver = pair.giver, pair.receiver
         assert giver != receiver

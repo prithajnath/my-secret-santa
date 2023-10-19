@@ -23,7 +23,7 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
         channel_id,
         created_at,
         group_name 
-    FROM cte1 WHERE r = 1;
+    FROM cte1 WHERE r = 1
 );
 
 CREATE UNIQUE INDEX ON all_latest_pairs_view (id);

@@ -16,7 +16,9 @@ class MaterializedView:
 
     def create(self):
         try:
-            self.conn.engine.execute(self.ddl)
+            with self.conn.engine.begin() as connection:
+                logger.info(f"creating mat view {self.name}")
+                connection.execute(self.ddl)
         except ProgrammingError as e:
             if f"relation '{self.name}'already exists" in e.__str__():
                 logger.info(

@@ -14,7 +14,7 @@ from random import uniform
 from time import sleep
 from sqlalchemy.types import Unicode
 from uuid import uuid4
-from sqlalchemy import and_
+from sqlalchemy import func, select, and_
 from requests.exceptions import HTTPError, ConnectionError, Timeout
 from datetime import datetime
 from models import (
@@ -101,7 +101,7 @@ def retry(exceptions: Tuple, max_retries: int = 3):
                     if type(e) not in exceptions:
                         return RetryException(
                             f"""
-                        Caught an unknown exception. Refraining from retries
+                        Caught an unknown exception while executing {f.__name__}. Refraining from retries
                         {e}
                         """
                         )
@@ -655,9 +655,7 @@ def make_pairs(group_id):
 
         task.status = "processing"
         task.save_to_db(db)
-
         result = chain(_make_pairs_async, _make_pairs, pipe={"group_id": group_id})
-
         # result = asyncio.run(_make_pairs_async(pipe={"group_id": group_id}))
 
         task.status = "finished"
