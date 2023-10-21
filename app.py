@@ -161,7 +161,7 @@ def google_oauth():
         user_id=user.id,
         id=google_user["id"],
         avatar_url=google_user["avatar_url"],
-        vendor="Google",
+        vendor=OAuthProviderEnum.GOOGLE,
     )
 
     user_google_profile.save_to_db(db)

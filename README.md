@@ -7,7 +7,7 @@ Invite your buddies and do a secret santa draw. Trust me, it will be really rand
 You'll need the following in your dev machine to get started
 
 * pipenv
-* Python 3.8
+* Python 3.10
 * Docker (CLI and daemon)
 * docker-compose
 
@@ -46,8 +46,8 @@ This aborts a commit if your `requirements.txt` is out of sync. Update `requirem
 $ pipenv lock -r > requirements.txt
 $ git commit -m "hey hey ho ho"
 ```
-### NOTE: If your system Python is not 3.8
-This is probably fine but can cause issues. In that case, just add the deadsnakes PPA and download Python 3.8. DO NOT try changing your system Python by updating the `python3` symlink. If you had already created a virtualenv with pipenv, you'll have to remove it first and then create another virtualenv that uses Python 3.8
+### NOTE: If your system Python is not 3.10
+This is probably fine but can cause issues. In that case, just add the deadsnakes PPA and download Python 3.10. DO NOT try changing your system Python by updating the `python3` symlink. If you had already created a virtualenv with pipenv, you'll have to remove it first and then create another virtualenv that uses Python 3.10
 
 ```
 $ sudo apt install software-properties-common
