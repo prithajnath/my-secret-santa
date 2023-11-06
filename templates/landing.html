@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="UTF-8">
+  <meta name="description" content="Highly randomized secret santa pairings">
+  <meta name="keywords" content="Secret Santa, Christmas, gifts">
+  <meta name="author" content="Prithaj Nath">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Source+Code+Pro:wght@200&display=swap"
+    rel="stylesheet">
+  <style>
+    iframe {
+      width: 1250px;
+      height: 500px;
+    }
+
+    #hint {
+      width: 400%;
+      height: 200px;
+    }
+
+    #address {
+      width: 400%;
+      height: 200px;
+    }
+  </style>
+  <title>My Secret Santa</title>
+</head>
+<style>
+  body {
+    font-family: 'Gloria Hallelujah', cursive;
+    background-color: #fcd24a00;
+    background-image: radial-gradient(circle 30px, #bfb2b2 0%, #f7d041 10%);
+    background-position: 0 0, 50px 50px;
+    background-size: 100px 100px;
+    background-attachment: fixed;
+    font-size: 30px;
+  }
+
+
+  .santa-button {
+    background-color: #f7d041;
+    border-color: black;
+    border-width: 1.8px;
+    border-radius: 3px;
+    border-style: solid;
+    padding: 5px 15px 5px 15px;
+    font-size: larger;
+    font-weight: bolder;
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    transition: all 0.4s;
+  }
+
+  .santa-button:hover {
+    cursor: pointer;
+    background-color: #f12933;
+    color: #fefcfb;
+    position: relative;
+    display: inline block;
+  }
+
+  .santa-button:disabled {
+    cursor: auto;
+    background-color: #fefcfb;
+    border-color: #6b6b6b;
+    color: #6b6b6b;
+    position: relative;
+    display: inline block;
+  }
+
+  .modal-content {
+    border-radius: 10px;
+    border-width: 3px;
+    border-color: black;
+  }
+
+  .form-control {
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    padding: 3px 0px 3px 3px;
+    margin: 5px 1px 3px 0px;
+    border: 2px solid black;
+    border-radius: 0px;
+    resize: none;
+    background-color: #fefcfb;
+    width: 100%;
+  }
+
+  .santa-card {
+    border-width: 1px;
+    border-color: black;
+  }
+
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  a:hover {
+    text-decoration: none;
+    color: #fefcfb;
+  }
+
+  svg {
+    cursor: pointer;
+  }
+
+  h1 {
+    font-size: 6.5rem;
+    font-weight: bold;
+  }
+</style>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <img src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1699053312/santa_hvf9nk.png" class="img-fluid" />
+      </div>
+      <div class="col">
+        <br></br>
+        <img src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1605468679/huge_1_ftwk3b.png" class="img-fluid" />
+        <br></br>
+        <p>The best and the most random secret santa pairings. Ever. This website draws its randomness from quantum
+          fluctuations in vaccuum, thanks to the Australian National University's QRNG. Anyway, the point is, this is
+          going to be the most random secret santa draw you can imagine. Seriously</p>
+        <br></br>
+        <a href="/signup" class="santa-button">Signup/Login</a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <br></br>
+        <h1>
+          <stronger>Create a group</stronger>
+        </h1>
+        <p>Name your group anything you want. Could be your high school friends, buddies from college, coworkers tec</p>
+
+      </div>
+
+      <div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item"
+          src="https://res.cloudinary.com/dzmp7xptn/video/upload/v1699055286/create_groups_wswxn5.webm"></iframe>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <br></br>
+        <h1>
+          <stronger>Add your folks!</stronger>
+        </h1>
+        <p>You're gonna need people's emails to add them to your group. Once you have them, send those invites!</p>
+
+      </div>
+
+      <div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item"
+          src="https://res.cloudinary.com/dzmp7xptn/video/upload/v1699056117/add_people_to_groups_ijpbgp.webm"></iframe>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <br></br>
+        <h1>
+          <stronger>Create pairings!</stronger>
+        </h1>
+        <p>Once everyone's in the group, just create pairings with just one click!</p>
+
+      </div>
+
+      <div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item"
+          src="https://res.cloudinary.com/dzmp7xptn/video/upload/v1699056117/add_people_to_groups_ijpbgp.webm"></iframe>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <br></br>
+        <h1>
+          <stronger>There's more!</stronger>
+        </h1>
+        <p>You can send messages to each other anonymously! Your santa can message you without you knowing who they are
+          and
+          vice versa!</p>
+
+      </div>
+
+      <div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item"
+          src="https://res.cloudinary.com/dzmp7xptn/video/upload/v1699058500/messages_anon_ygtzrk.webm"></iframe>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <br></br>
+        <h1>
+          <stronger>Get started!</stronger>
+        </h1>
+        <p>What are you waiting for? Create an account for free and get the christmas spirit going</p>
+
+        <br></br>
+        <a style="margin: 5px;" class="santa-button" href="/signup">get started</a>
+      </div>
+
+    </div>
+    <div class="row">
+      <div class="col-md-6 offset-md-6">
+        <br></br>
+        <!-- Place this tag where you want the button to render. -->
+        <a class="github-button" href="https://github.com/prithajnath/my-secret-santa" data-size="large"
+          aria-label="Star prithajnath/my-secret-santa on GitHub">Star</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+  <!-- Place this tag in your head or just before your close body tag. -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <script>
+    $('.alert').on('closed.bs.alert', function () {
+      window.location.search = "";
+    });
+  </script>
+</body>
+
+</html>

@@ -14,7 +14,7 @@ from random import uniform
 from time import sleep
 from sqlalchemy.types import Unicode
 from uuid import uuid4
-from sqlalchemy import func, select, and_
+from sqlalchemy import select, func, and_
 from requests.exceptions import HTTPError, ConnectionError, Timeout
 from datetime import datetime
 from models import (
@@ -58,11 +58,11 @@ def send_email(to: str, subject: str, template_name: str, payload: Dict):
             },
         )
 
-        logger.info(response.status_code)
-        logger.info(response.content)
-        logger.info(response.headers)
+        logger.debug(response.status_code)
+        logger.debug(response.content)
+        logger.debug(response.headers)
     else:
-        logger.info(f"pretending to send and email to {to}")
+        logger.debug(f"pretending to send and email to {to}")
 
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
@@ -195,9 +195,9 @@ async def _make_pairs_async(pipe={}):
             return number
 
         async def add_weight_to_user(user, session):
-            logger.info(f"Grabbing random number for {user}")
+            logger.debug(f"Grabbing random number for {user}")
             random_number = await grab_random_number_for_user(session)
-            logger.info(f"The quantuam random machine said {random_number}")
+            logger.debug(f"The quantuam random machine said {random_number}")
             weighted_set.append((user, random_number))
 
         async with ClientSession() as session:
@@ -207,7 +207,7 @@ async def _make_pairs_async(pipe={}):
                     user = user_association.user
                     tasks.append(add_weight_to_user(user, session))
                 else:
-                    logger.info(
+                    logger.debug(
                         f"Skipping user {user_association.user} because they chose not to participate"
                     )
             await asyncio.gather(*tasks)
@@ -309,8 +309,8 @@ def _send_message_notification(
                 },
             )
         else:
-            logger.info(intro)
-            logger.info(text)
+            logger.debug(intro)
+            logger.debug(text)
 
 
 @network_exception_retry
@@ -332,8 +332,8 @@ def _send_group_chat_notification(
                 },
             )
         else:
-            logger.info(intro)
-            logger.info(text)
+            logger.debug(intro)
+            logger.debug(text)
 
 
 @network_exception_retry
@@ -358,7 +358,7 @@ def _reset_user_password(email, user):
             )
 
         else:
-            logger.info(new_password)
+            logger.debug(new_password)
             # This is just to simulate network errors in a dev environemnt
             requests.get("https://www.mysecretsanta.io/math")
 
@@ -655,15 +655,24 @@ def make_pairs(group_id):
 
         task.status = "processing"
         task.save_to_db(db)
-        result = chain(_make_pairs_async, _make_pairs, pipe={"group_id": group_id})
-        # result = asyncio.run(_make_pairs_async(pipe={"group_id": group_id}))
 
+        for attempt in range(1000):
+            logger.info(f"Attempting to create pairs for {attempt + 1} time")
+            result = chain(_make_pairs_async, _make_pairs, pipe={"group_id": group_id})
+
+            if not isinstance(result, RetryException):
+                if not result["final_pairs"]:
+                    continue
+                else:
+                    break
+            else:
+                break
         task.status = "finished"
         task.finished_at = datetime.now()
         task.save_to_db(db)
 
         # Update pair creation status
-        if type(result) == RetryException:
+        if isinstance(result, RetryException):
             task.error = str(result)
             task.save_to_db(db)
         else:

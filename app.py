@@ -752,7 +752,10 @@ def register():
 
     form = SignUpForm()
     if request.method == "GET":
-        return render_template("index.html", form=form)
+        google_oauth_client = OAUTH_CLIENTS["Google"]
+        return render_template(
+            "index.html", form=form, oauth_url=google_oauth_client.oauth_url
+        )
 
     if form.validate_on_submit():
         username = User.query.filter_by(username=form.username.data).first()
@@ -779,7 +782,7 @@ def register():
         else:
             return redirect(
                 url_for(
-                    ".index", alert="User with that email or username already exists"
+                    ".signup", alert="User with that email or username already exists"
                 )
             )
 
@@ -788,9 +791,22 @@ def register():
 def index():
     if current_user.is_authenticated:
         return redirect("/profile")
+    return render_template("landing.html")
+
+
+@app.route("/signup")
+def signup():
+    if current_user.is_authenticated:
+        return redirect("/profile")
     form = SignUpForm()
     alert = request.args.get("alert")
-    return render_template("index.html", alert=alert, form=form)
+    google_oauth_client = OAUTH_CLIENTS["google"]
+    return render_template(
+        "index.html",
+        alert=alert,
+        form=form,
+        oauth_url=google_oauth_client.oauth_url,
+    )
 
 
 # JSON endpoints

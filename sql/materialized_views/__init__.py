@@ -21,12 +21,12 @@ class MaterializedView:
                 connection.execute(self.ddl)
         except ProgrammingError as e:
             if f"relation '{self.name}'already exists" in e.__str__():
-                logger.info(
+                logger.debug(
                     f"Materialized view {self.name} already exists. Skipping creation"
                 )
 
     def refresh(self):
-        logger.info(f"refreshing materialized view {self.name}")
+        logger.debug(f"refreshing materialized view {self.name}")
         with self.conn.engine.begin() as connection:
             connection.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {self.name}")
 

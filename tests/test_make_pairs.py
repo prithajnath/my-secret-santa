@@ -1,64 +1,39 @@
 from datetime import datetime
 import logging
+from operator import and_
+from unittest import mock
 from app import app, db
 from models import Task, User, Pair, Group, GroupsAndUsersAssociation
 from uuid import uuid4
-from random import choice
+from random import choice, randint
 from time import sleep
 from celery import Celery
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import func, select
+from unittest.mock import create_autospec, MagicMock, patch
+from sqlalchemy import alias, func, select
 
 import pytest
+import tasks
 import os
 
 
 logger = logging.getLogger(__name__)
 
+USERNAMES = [
+    "suzannevazquez",
+    "johnerickson",
+    "michellemitchell",
+    "victoriataylor",
+    "richardho",
+    "sarayoder",
+]
+
 
 @pytest.fixture
 def users():
-    users = """
-        leslieday
-        christopherclark
-        christinehartman
-        davidbrown
-        tracymcdaniel
-        marcunderwood
-        benjaminsolis
-        allisonthomas
-        stevendaniel
-        kevinwheeler
-        staceycarter
-        veronicaanderson
-        michaelriley
-        jackjohnson
-        rebeccajones
-        melaniebradley
-        gregorymendez
-        alexcampbell
-        shelleyfisher
-        steveking
-        kevingrant
-        anajames
-        matthewchavez
-        nicholasgreene
-        michaelthomas
-        jefferybryant
-        tinahudson
-        julienguyen
-        michaelcooper
-        suzannevazquez
-        johnerickson
-        michellemitchell
-        victoriataylor
-        richardho
-        sarayoder
-    """.split()
-
     user_objs = []
     with app.app_context():
-        for username in users:
+        for username in USERNAMES:
             user = User(
                 username=username, email=f"{username}_{uuid4().__str__()[:8]}@santa.io"
             )
@@ -142,3 +117,93 @@ def test_no_one_is_their_own_secret_santa(pairs):
     for pair in pairs:
         giver, receiver = pair.giver, pair.receiver
         assert giver != receiver
+
+
+def test_no_one_received_their_santa_from_last_time(pairs):
+    old_pairs = [(pair.giver, pair.receiver) for pair in pairs]
+    old_pairs_with_usernames = [
+        (pair.giver.username, pair.receiver.username) for pair in pairs
+    ]
+
+    group = pairs[0].group
+
+    task = (
+        Task.query.filter(
+            and_(
+                Task.name == "create_pairs",
+                Task.payload["group_id"].as_integer() == group.id,
+            )
+        )
+        .order_by(Task.finished_at.desc())
+        .first()
+    )
+    task.status = "starting"
+
+    db.session.add(task)
+    db.session.flush()
+
+    fake_weighted_set = []
+    for i, pair in enumerate(old_pairs):
+        x, y = pair
+        fake_weighted_set.append((x, (2 * i) + 1))
+
+    mocked_async_pair = MagicMock()
+
+    def mocked_async_pair_side_effect(*args, **kwargs):
+        if mocked_async_pair_side_effect.counter == 0:
+            mocked_async_pair_side_effect.counter += 1
+            return {
+                "weighted_set": fake_weighted_set,
+                "group_id": group.id,
+            }
+        else:
+            mocked_async_pair_side_effect.counter += 1
+            return {
+                "weighted_set": [(u[0], randint(10, 100)) for u in old_pairs],
+                "group_id": group.id,
+            }
+
+    mocked_async_pair_side_effect.counter = 0
+    mocked_async_pair.side_effect = mocked_async_pair_side_effect
+    tasks._make_pairs_async = mocked_async_pair
+    tasks.make_pairs(group.id)
+
+    givers = alias(User)
+    receivers = alias(User)
+    ranked_pairs = (
+        select(
+            Pair.id,
+            Pair.giver_id,
+            Pair.receiver_id,
+            givers.c.username.label("giver_username"),
+            receivers.c.username.label("receiver_username"),
+            func.rank()
+            .over(
+                partition_by=Pair.group_id,
+                order_by=Pair.timestamp.desc(),
+            )
+            .label("rank"),
+        )
+        .select_from(Pair)
+        .join(receivers, receivers.c.id == Pair.receiver_id)
+        .join(givers, givers.c.id == Pair.giver_id)
+        .where(Pair.group_id == group.id)
+        .cte()
+    )
+
+    latest_pairs_sql = (
+        select(*(col for col in ranked_pairs.c if col.name != "rank"))
+        .select_from(ranked_pairs)
+        .where(ranked_pairs.c.rank == 1)
+    )
+
+    latest_pairs = db.session.execute(latest_pairs_sql).all()
+
+    assert len(latest_pairs) == len(pairs)
+    latest_pairs_with_usernames = []
+    for pair in latest_pairs:
+        _, x, y, x_name, y_name = pair
+        assert (x, y) not in old_pairs
+        latest_pairs_with_usernames.append((x_name, y_name))
+
+    Pair.query.filter(Pair.id.in_(row[0] for row in latest_pairs)).delete()
