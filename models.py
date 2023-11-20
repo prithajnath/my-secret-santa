@@ -116,6 +116,12 @@ class Group(dbMixin, UserMixin, db.Model):
     name = db.Column(db.String(200), unique=True, nullable=False)
     reveal_latest_pairs = db.Column(db.Boolean, default=False)
     users = db.relationship("GroupsAndUsersAssociation", backref="_group")
+    created_at = db.Column(
+        db.DateTime, default=func.current_timestamp(), nullable=False
+    )
+    updated_at = db.Column(
+        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+    )
 
     def __init__(self, name):
         self.name = name
