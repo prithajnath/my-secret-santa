@@ -3,12 +3,12 @@
 
 
 {% if message %}
-  <div class="alert alert-danger alert-dismissible fade show" role="alert">
-    {{ message }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-  </div>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
 {% endif %}
 
 
@@ -29,7 +29,7 @@
       <h1>{{ user.first_name }} {{ user.last_name }}</h1>
       <p><strong>@{{ user.username }}</strong></p>
       <h2>Hint</h2>
-      <p>{{ user.hint }}</p>
+      <p style="white-space: pre-wrap;">{{ user.hint }}</p>
       <h2>Address</h2>
       <p>{{ user.address }}</p>
     </div>
@@ -46,7 +46,7 @@
       <h2>Email</h2>
       <p>{{ current_user.email }}</p>
       <h2>Hint</h2>
-      <p>{{ current_user.hint }}</p>
+      <p style="white-space: pre-wrap;">{{ current_user.hint }}</p>
       <h2>Address</h2>
       <p>{{ current_user.address }}</p>
       <a href="/edit_profile"><button class="santa-button">Edit</button></a>
