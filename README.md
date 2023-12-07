@@ -117,3 +117,35 @@ INFO   95%      1290 ms
 INFO   99%      1423 ms
 INFO  100%      1453 ms (longest request)
 ```
+
+
+### Backups
+
+1. Create backup file called `backup.sql` in prod 
+```
+docker exec my-secret-santa_secret-santa-web_1 'pg_dump -a -h secret-santa-postgres -U postgres postgres > backup.sql
+```
+
+2. Transfer it to whatever machine using SFTP
+
+```
+sftp santa-ec2
+Connected to santa-ec2.
+sftp> get backup/backup.sql 
+Fetching /home/ubuntu/backup/backup.sql to backup.sql
+backup.sql                                                                                                                                                                                                  100%  260KB 997.4KB/s   00:00    
+sftp> exit
+```
+
+3. Bring this file to new server and copy it to the running web container
+
+```
+docker cp backup.sql my-secret-santa_secret-santa-web_1:/usr/bin/secretsanta
+
+```
+4. restore db with `psql`
+
+```
+psql -h secret-santa-postgres -U postgres --db postgres -f backup.sql
+
+```
