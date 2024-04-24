@@ -2,7 +2,7 @@ name: Secret Santa Image Build/Deploy
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build_container_image:
@@ -17,10 +17,10 @@ jobs:
       SENDGRID_RESET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_RESET_PASSWORD_TEMPLATE_ID }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-    runs-on: [ self-hosted ]
+    runs-on: [digital-ocean]
     steps:
       - uses: actions/checkout@v2
-      - run: ./jobs/build_container_image.sh 
+      - run: ./jobs/build_container_image.sh
 
   deploy_all_services:
     env:
@@ -35,9 +35,7 @@ jobs:
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
     needs: build_container_image
-    runs-on: [ self-hosted ]
+    runs-on: [self-hosted]
     steps:
       - uses: actions/checkout@v2
       - run: ./jobs/deploy_all_services.sh
-
-  
