@@ -289,6 +289,8 @@
   const origin = window.location.origin;
   const group_id = (new URL(window.location.href)).searchParams.get("group_id");
   const current_user_username = "{{ current_user.username }}";
+  
+  let scrollsToBottom = 0;
 
   function createMessageDiv(avatar_url, firstName, type, text) {
     var mainDiv = document.createElement("div");
@@ -309,6 +311,21 @@
 
 
   }
+
+
+    // scroll to bottom when group message is opened for the first time
+    $('#MessageModal').on('shown.bs.modal', function () {
+      if(bottomScrolls === 0){
+                  document.querySelector("#messageContent")
+            .scrollTo(0,
+              document.querySelector("#messageContent").scrollHeight
+            ) 
+          bottomScrolls++
+      }
+
+  })
+
+
 
   async function grabGroupMessages() {
     var url = encodeURI(`${origin}/group_message?group_id=${group_id}`);
