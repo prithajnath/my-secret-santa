@@ -240,6 +240,7 @@
             <div class="santee_username" username=""></div>
             <div id="messageContent" class="container-fluid"></div>
           </div>
+        <button id="scrolltobottom" onclick="scrollToBottom(this)" class="santa-button" data-dashlane-label="true" style="border-radius: 0px;">scroll to bottom</button>
           <div class="modal-footer">
             <textarea id="messageText" style="width: 80%;"></textarea>
             <button onclick="sendMessageToGroup(this)" class="santa-button">Send</button>
@@ -290,7 +291,25 @@
   const group_id = (new URL(window.location.href)).searchParams.get("group_id");
   const current_user_username = "{{ current_user.username }}";
   
-  let scrollsToBottom = 0;
+  function scrollToBottom (){
+      document.querySelector("#messageContent")
+      .scrollTo(0,
+        document.querySelector("#messageContent").scrollHeight
+      ) 
+  }
+
+
+  document.querySelector("#messageContent").addEventListener('scroll', function(e){
+    console.log("scrolling")
+    let current_scroll_h = document.querySelector("#messageContent").scrollTop || window.pageYOffset
+    if(current_scroll_h === document.querySelector("#messageContent").scrollHeight - document.querySelector("#messageContent").offsetHeight){
+      document.querySelector("#scrolltobottom").disabled = true
+    }else{
+      document.querySelector("#scrolltobottom").disabled = false;
+
+    }
+    
+  })
 
   function createMessageDiv(avatar_url, firstName, type, text) {
     var mainDiv = document.createElement("div");
@@ -313,17 +332,7 @@
   }
 
 
-    // scroll to bottom when group message is opened for the first time
-    $('#MessageModal').on('shown.bs.modal', function () {
-      if(bottomScrolls === 0){
-                  document.querySelector("#messageContent")
-            .scrollTo(0,
-              document.querySelector("#messageContent").scrollHeight
-            ) 
-          bottomScrolls++
-      }
 
-  })
 
 
 
