@@ -1,61 +1,58 @@
 import logging
-from flask import Flask, render_template, request, redirect, jsonify, url_for
-from flask_wtf.csrf import CSRFProtect
-from collections import namedtuple
-from datetime import datetime, date
-from models import (
-    db,
-    Group,
-    User,
-    Pair,
-    Task,
-    PairCreationStatus,
-    GroupsAndUsersAssociation,
-    GroupPairReveals,
-    EmailInvite,
-    Message,
-    GroupMessage,
-    PasswordReset,
-    UserOAuthProfile,
-    OAuthProviderEnum,
-    all_admin_materialized_view,
-    all_latest_pairs_view,
-)
-from serializers import ma
-from sqlalchemy import func, select, and_, or_, JSON, cast
-from sqlalchemy.types import Unicode
-from celery import Celery
-from flask_mail import Mail
-from flask_login import (
-    LoginManager,
-    login_user,
-    logout_user,
-    login_required,
-    current_user,
-)
-from flask_bootstrap import Bootstrap
-from forms import (
-    SignUpForm,
-    LoginForm,
-    ProfileEditForm,
-    InviteUserToGroupForm,
-    CreateGroupForm,
-    ChangePasswordForm,
-    CreatePairsForm,
-    ResetPasswordForm,
-    LeaveGroupForm,
-    KickUserForm,
-)
-
 import os
-import admin
 import re
-import hashlib
+from collections import namedtuple
 from datetime import datetime
 from random import choices
-from lib.oauth.google import Google
-from sql import AdvisoryLock
+
 import maya
+from celery import Celery
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask_bootstrap import Bootstrap
+from flask_login import (
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
+from flask_mail import Mail
+from flask_wtf.csrf import CSRFProtect
+from sqlalchemy import and_, func, or_
+
+import admin
+from forms import (
+    ChangePasswordForm,
+    CreateGroupForm,
+    CreatePairsForm,
+    InviteUserToGroupForm,
+    KickUserForm,
+    LeaveGroupForm,
+    LoginForm,
+    ProfileEditForm,
+    ResetPasswordForm,
+    SignUpForm,
+)
+from lib.oauth.google import Google
+from models import (
+    EmailInvite,
+    Group,
+    GroupMessage,
+    GroupPairReveals,
+    GroupsAndUsersAssociation,
+    Message,
+    OAuthProviderEnum,
+    Pair,
+    PairCreationStatus,
+    Task,
+    User,
+    UserOAuthProfile,
+    all_admin_materialized_view,
+    all_latest_pairs_view,
+    db,
+)
+from serializers import ma
+from sql import AdvisoryLock
 
 app = Flask(__name__)
 app.config.update(
@@ -531,9 +528,11 @@ def group():
                 timestamp=datetime.now(),
                 invited_email=invite_user_to_group_form.email.data,
                 code=EmailInvite.generate_code("group"),
-                payload={"group_id": group.id, "user_id": user.id}
-                if user
-                else {"group_id": group.id},
+                payload=(
+                    {"group_id": group.id, "user_id": user.id}
+                    if user
+                    else {"group_id": group.id}
+                ),
             )
 
             new_invite.save_to_db(db)
@@ -827,23 +826,39 @@ def group_message():
 
         new_message.save_to_db(db)
 
-        task = Task(
-            name="send_group_chat_notifications",
-            started_at=datetime.now(),
-            status="starting",
-            payload={
-                "sender_username": current_user.username,
-                "text": message,
-                "group_id": group_id,
-            },
+        last_two_messages = (
+            GroupMessage.query.filter_by(group_id=group_id)
+            .order_by(GroupMessage.created_at.desc())
+            .limit(2)
+            .all()
         )
 
-        task.save_to_db(db)
+        m1: GroupMessage
+        m2: GroupMessage
+        m1, m2 = last_two_messages
+        delta = m1.created_at - m2.created_at
 
-        celery.send_task(
-            "user.send_group_chat_notifications",
-            (current_user.username, message, group_id),
-        )
+        if delta.seconds + delta.days * (60**2) * 24 >= 60 * 15:
+
+            task = Task(
+                name="send_group_chat_notifications",
+                started_at=datetime.now(),
+                status="starting",
+                payload={
+                    "sender_username": current_user.username,
+                    "text": message,
+                    "group_id": group_id,
+                },
+            )
+
+            task.save_to_db(db)
+
+            celery.send_task(
+                "user.send_group_chat_notifications",
+                (current_user.username, message, group_id),
+            )
+        else:
+            logger.info(f"Too many frquent messages for group {group_id}. Backing off")
 
         return jsonify(result=True)
 
@@ -859,9 +874,11 @@ def group_message():
                 "username": message.sender.username,
                 "avatar_url": message.sender.avatar_url,
                 "first_name": message.sender.first_name,
-                "type": "receiver"
-                if current_user.username == message.sender.username
-                else "sender",
+                "type": (
+                    "receiver"
+                    if current_user.username == message.sender.username
+                    else "sender"
+                ),
                 "text": message.text,
             }
             for message in all_messages
