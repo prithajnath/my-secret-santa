@@ -1,36 +1,33 @@
+import asyncio
+import json
 import logging
 import os
-import sendgrid
-import json
 import sys
-import requests
-import asyncio
-from celery import Celery
-from time import time
-from requests import get
-from functools import wraps
-from typing import Tuple, Dict, Optional, Callable, Any, Union
-from random import uniform
-from time import sleep
-from sqlalchemy.types import Unicode
-from uuid import uuid4
-from sqlalchemy import select, func, and_
-from requests.exceptions import HTTPError, ConnectionError, Timeout
 from datetime import datetime
-from models import (
-    Pair,
-    Group,
-    User,
-    Task,
-    PasswordReset,
-    all_latest_pairs_view,
-    PairCreationStatus,
-)
-from aiohttp import ClientSession
-from aiohttp.web import HTTPException, HTTPServerError
-from aiohttp.client_exceptions import ClientConnectionError
-from app import db, app, celery as app_celery
+from functools import wraps
+from random import uniform
+from time import sleep, time
+from typing import Dict, Tuple
+from uuid import uuid4
 
+import requests
+from aiohttp import ClientSession
+from aiohttp.client_exceptions import ClientConnectionError
+from aiohttp.web import HTTPException, HTTPServerError
+from celery import Celery
+from requests.exceptions import ConnectionError, HTTPError, Timeout
+from sqlalchemy import and_
+
+from app import app
+from app import celery as app_celery
+from app import db
+from models import (
+    Group,
+    Pair,
+    Task,
+    User,
+    all_latest_pairs_view,
+)
 
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
@@ -267,7 +264,7 @@ def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code)
             payload={
                 "admin_first_name": admin_first_name,
                 "invite_for": f"a secret santa draw for the group {group_name}",
-                "url": f"https://app.mysecretsanta.io/?next=/invite?code={invite_code}",
+                "url": f"https://app.mysecretsanta.io/signup?next=/invite?code={invite_code}",
             },
         )
 
