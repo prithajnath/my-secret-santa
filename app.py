@@ -84,7 +84,9 @@ csrf.init_app(app)
 
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("gunicorn.error")
+app.logger.handlers = logger.handlers
+app.logger.setLevel(logger.level)
 
 OAUTH_CLIENTS = {
     "google": Google(
