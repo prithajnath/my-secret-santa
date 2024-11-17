@@ -817,6 +817,14 @@ def group_message():
     group_id = request.args.get("group_id")
     if request.method == "POST":
         message = request.json.get("message")
+
+        last_message = (
+            GroupMessage.query.filter_by(group_id=group_id)
+            .order_by(GroupMessage.created_at.desc())
+            .limit(1)
+            .first()
+        )
+
         new_message = GroupMessage(
             group_id=group_id,
             sender_id=current_user.id,
@@ -826,17 +834,10 @@ def group_message():
 
         new_message.save_to_db(db)
 
-        last_two_messages = (
-            GroupMessage.query.filter_by(group_id=group_id)
-            .order_by(GroupMessage.created_at.desc())
-            .limit(2)
-            .all()
-        )
-
-        m1: GroupMessage
-        m2: GroupMessage
-        m1, m2 = last_two_messages
-        delta = m1.created_at - m2.created_at
+        if last_message:
+            delta = new_message.created_at - last_message.created_at
+        else:
+            delta = new_message.created_at - datetime(1970, 1, 1)
 
         if delta.seconds + delta.days * (60**2) * 24 >= 60 * 15:
 
