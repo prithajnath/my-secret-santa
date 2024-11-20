@@ -476,7 +476,7 @@ def group():
             today = datetime.now()
 
             delta = today - pair_latest_timestamp
-            if delta.days > 1:
+            if delta.days >= 1:
                 if group.is_admin(current_user) and current_user.is_authenticated:
                     with AdvisoryLock(
                         engine=db.engine, lock_key=group.name
