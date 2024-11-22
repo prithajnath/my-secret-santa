@@ -82,6 +82,7 @@ yarl = "==1.6.3"
 "zope.event" = "==4.5.0"
 "zope.interface" = "==5.2.0"
 gevent = "*"
+sentry-sdk = {extras = ["flask"], version = "*"}
 
 [dev-packages]
 
