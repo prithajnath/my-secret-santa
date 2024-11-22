@@ -6,6 +6,7 @@ from datetime import datetime
 from random import choices
 
 import maya
+import sentry_sdk
 from celery import Celery
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from flask_bootstrap import Bootstrap
@@ -87,6 +88,20 @@ celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 logger = logging.getLogger("gunicorn.error")
 app.logger.handlers = logger.handlers
 app.logger.setLevel(logger.level)
+
+# sentry
+sentry_sdk.init(
+    dsn="https://337a4e528edb7fd4e8aadd2de92e8d17@o4508342654992384.ingest.us.sentry.io/4508342656368640",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    _experiments={
+        # Set continuous_profiling_auto_start to True
+        # to automatically start the profiler on when
+        # possible.
+        "continuous_profiling_auto_start": True,
+    },
+)
 
 OAUTH_CLIENTS = {
     "google": Google(
@@ -721,6 +736,7 @@ def invite():
             group_id = invite.payload["group_id"]
             if user_id := invite.payload.get("user_id"):
                 if user_id != current_user.id:
+                    logger.error(f"Wrong invite code used for user {user_id}")
                     return redirect("/profile", message="Wrong invite code used")
                 new_group_assoc = GroupsAndUsersAssociation(
                     group_id=group_id, user_id=current_user.id
@@ -730,6 +746,7 @@ def invite():
                 # This is a new user so we need to find the User object
                 user = User.query.filter_by(email=invite.invited_email).first()
                 if user.id != current_user.id:
+                    logger.error(f"Wrong invite code used for new user {user.email}")
                     return redirect("/profile", message="Wrong invite code used")
                 new_group_assoc = GroupsAndUsersAssociation(
                     group_id=group_id, user_id=user.id
