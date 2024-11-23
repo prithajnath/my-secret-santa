@@ -175,6 +175,14 @@
       var oauth_url = new URL(oauth_google.href);
       oauth_url.searchParams.set("state", encodeURIComponent(next));
       oauth_google.href = oauth_url.toString();
+
+
+      // update ALL links in the site to carry this param
+    document.querySelectorAll("a").forEach(function(a){
+      var current_url = new URL(a.href);
+      current_url.searchParams.set("next", next)
+      a.href = current_url.toString();
+    })
     }
 
 
