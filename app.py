@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import urllib.parse
 from collections import namedtuple
 from datetime import datetime
 from random import choices
@@ -85,23 +86,27 @@ csrf.init_app(app)
 
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
-logger = logging.getLogger("gunicorn.error")
-app.logger.handlers = logger.handlers
-app.logger.setLevel(logger.level)
+if os.getenv("ENV") == "production":
+    logger = logging.getLogger("gunicorn.error")
+    app.logger.handlers = logger.handlers
+    app.logger.setLevel(logger.level)
+else:
+    logger = app.logger
 
 # sentry
-sentry_sdk.init(
-    dsn="https://337a4e528edb7fd4e8aadd2de92e8d17@o4508342654992384.ingest.us.sentry.io/4508342656368640",
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for tracing.
-    traces_sample_rate=1.0,
-    _experiments={
-        # Set continuous_profiling_auto_start to True
-        # to automatically start the profiler on when
-        # possible.
-        "continuous_profiling_auto_start": True,
-    },
-)
+if os.getenv("ENV") == "production":
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_API_KEY"),
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing.
+        traces_sample_rate=1.0,
+        _experiments={
+            # Set continuous_profiling_auto_start to True
+            # to automatically start the profiler on when
+            # possible.
+            "continuous_profiling_auto_start": True,
+        },
+    )
 
 OAUTH_CLIENTS = {
     "google": Google(
@@ -127,10 +132,18 @@ def unauthorized_callback():
 @app.route("/google_oauth", methods=["GET", "POST"])
 def google_oauth():
     code = request.args.get("code")
+    state = request.args.get("state")
     google_oauth_client = OAUTH_CLIENTS["google"]
     google_user = google_oauth_client.user_data(code=code)
     email = google_user["email"]
     logger.info(google_user)
+
+    logger.info(state)
+    redirect_url = "/"
+    if state:
+        if "invite" in state:
+            next_url = urllib.parse.unquote(state)
+            redirect_url = next_url
 
     # Check if we have a user with this email in the first place
     if user := User.query.filter_by(email=email).first():
@@ -144,7 +157,7 @@ def google_oauth():
             user_google_profile.save_to_db(db)  # This is to update last_logged_in
 
             login_user(user)
-            return redirect("/")
+            return redirect(redirect_url)
         else:
             # They're signing up/logging in with Google for the first time
             user_google_profile = UserOAuthProfile(
@@ -158,7 +171,7 @@ def google_oauth():
 
             login_user(user)
 
-            return redirect("/")
+            return redirect(redirect_url)
 
     # If we don't recognize this user,
     # we can create a new account without a password because Google has already authenticated them
@@ -182,7 +195,7 @@ def google_oauth():
 
     login_user(user)
 
-    return redirect("/")
+    return redirect(redirect_url)
 
 
 @app.route("/reset_password", methods=["GET", "POST"])
@@ -1071,6 +1084,14 @@ def reveal_secret_santa():
 if __name__ == "__main__":
     if os.getenv("ENV") != "production":
         ssl_context = ("cert.pem", "key.pem")
+        stream_handler = logging.StreamHandler()
+        stream_handler_formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        stream_handler.setFormatter(stream_handler_formatter)
+        app.logger.setLevel(logging.DEBUG)
+        app.logger.addHandler(stream_handler)
+
         app.run(host="0.0.0.0", port=9000, ssl_context=ssl_context, use_reloader=True)
     else:
         app.run(host="0.0.0.0", port=9000, use_reloader=True)

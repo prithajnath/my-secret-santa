@@ -112,7 +112,7 @@
         </form>
         <br />
         <button type="submit" class="santa-button">Sign up</button>
-        <a href="{{ oauth_url }}">
+        <a id="oauth_google" href="{{ oauth_url }}">
           <div>
             <img src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1680902967/google_logo_jsnpwn.png"
               style="height:40px; padding-left: 42%;" />
@@ -168,6 +168,13 @@
       var form = document.querySelector("form")
       var action = `${form.action}?next=${next}`;
       form.action = action;
+      // update oauth url
+      // add the invite code as state
+
+      var oauth_google = document.querySelector("#oauth_google");
+      var oauth_url = new URL(oauth_google.href);
+      oauth_url.searchParams.set("state", encodeURIComponent(next));
+      oauth_google.href = oauth_url.toString();
     }
 
 

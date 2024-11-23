@@ -29,6 +29,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SENTRY_API_KEY=${SENTRY_API_KEY}
       - PYTHONPATH=.
     entrypoint: "./entrypoint.sh"
   secret-santa-celery-service:
@@ -48,6 +49,7 @@ services:
       - CELERY_BROKER_URL=redis://secret-santa-redis
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - SENTRY_API_KEY=${SENTRY_API_KEY}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - UID=5000
       - GID=5000

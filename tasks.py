@@ -11,23 +11,19 @@ from typing import Dict, Tuple
 from uuid import uuid4
 
 import requests
+import sentry_sdk
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientConnectionError
 from aiohttp.web import HTTPException, HTTPServerError
 from celery import Celery
 from requests.exceptions import ConnectionError, HTTPError, Timeout
-from sqlalchemy import and_
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import aliased
 
 from app import app
 from app import celery as app_celery
 from app import db
-from models import (
-    Group,
-    Pair,
-    Task,
-    User,
-    all_latest_pairs_view,
-)
+from models import Group, Pair, Task, User, all_latest_pairs_view
 
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
@@ -39,13 +35,28 @@ celery.conf.task_routes = {
 
 logger = logging.getLogger(__name__)
 
+# sentry
+if os.getenv("ENV") == "production":
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_API_KEY"),
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing.
+        traces_sample_rate=1.0,
+        _experiments={
+            # Set continuous_profiling_auto_start to True
+            # to automatically start the profiler on when
+            # possible.
+            "continuous_profiling_auto_start": True,
+        },
+    )
+
 
 def send_email(to: str, subject: str, template_name: str, payload: Dict):
-    if os.getenv("ENV") == "production":
+    if mailgun_api_key := os.getenv("MAILGUN_API_KEY"):
         domain_name = "www.mysecretsanta.io"
         response = requests.post(
             f"https://api.mailgun.net/v3/{domain_name}/messages",
-            auth=("api", os.getenv("MAILGUN_API_KEY")),
+            auth=("api", mailgun_api_key),
             data={
                 "from": f"MySecretSanta <no-reply@{domain_name}>",
                 "to": [to],
