@@ -8,6 +8,7 @@ from models import (
     Group,
     GroupPairReveals,
     GroupsAndUsersAssociation,
+    Issue,
     Message,
     Pair,
     PasswordReset,
@@ -40,3 +41,4 @@ def register(app, db):
     admin.add_view(ModelView(GroupPairReveals, db.session))
     admin.add_view(ModelView(Message, db.session))
     admin.add_view(ModelView(UserOAuthProfile, db.session))
+    admin.add_view(ModelView(Issue, db.session))
