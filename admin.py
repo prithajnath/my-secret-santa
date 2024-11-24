@@ -1,19 +1,20 @@
-from flask_admin import Admin, AdminIndexView, expose
-from flask_admin.contrib.sqla import ModelView
-from models import (
-    User,
-    Group,
-    GroupsAndUsersAssociation,
-    Pair,
-    Task,
-    Message,
-    EmailInvite,
-    PasswordReset,
-    GroupPairReveals,
-    PairCreationStatus,
-)
-from flask_login import current_user
 from flask import redirect
+from flask_admin import Admin, AdminIndexView
+from flask_admin.contrib.sqla import ModelView
+from flask_login import current_user
+
+from models import (
+    EmailInvite,
+    Group,
+    GroupPairReveals,
+    GroupsAndUsersAssociation,
+    Message,
+    Pair,
+    PasswordReset,
+    Task,
+    User,
+    UserOAuthProfile,
+)
 
 
 class MyAdminIndexView(AdminIndexView):
@@ -36,6 +37,6 @@ def register(app, db):
     admin.add_view(ModelView(Task, db.session))
     admin.add_view(ModelView(EmailInvite, db.session))
     admin.add_view(ModelView(PasswordReset, db.session))
-    admin.add_view(ModelView(PairCreationStatus, db.session))
     admin.add_view(ModelView(GroupPairReveals, db.session))
     admin.add_view(ModelView(Message, db.session))
+    admin.add_view(ModelView(UserOAuthProfile, db.session))
