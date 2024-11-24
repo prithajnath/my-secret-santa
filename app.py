@@ -19,6 +19,7 @@ from flask_login import (
     logout_user,
 )
 from flask_mail import Mail
+from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import and_, func, or_
 
@@ -28,6 +29,7 @@ from forms import (
     CreateGroupForm,
     CreatePairsForm,
     InviteUserToGroupForm,
+    IssueReportForm,
     KickUserForm,
     LeaveGroupForm,
     LoginForm,
@@ -42,6 +44,7 @@ from models import (
     GroupMessage,
     GroupPairReveals,
     GroupsAndUsersAssociation,
+    Issue,
     Message,
     OAuthProviderEnum,
     Pair,
@@ -92,6 +95,8 @@ if os.getenv("ENV") == "production":
     app.logger.setLevel(logger.level)
 else:
     logger = app.logger
+
+migrate = Migrate(app, db)
 
 # sentry
 if os.getenv("ENV") == "production":
@@ -1067,6 +1072,32 @@ def reveal_group_santas():
 
         return jsonify(result=action)
     return 404
+
+
+@app.route("/report_issue", methods=["GET", "POST"])
+@login_required
+def report_issue():
+
+    form = IssueReportForm()
+    if request.method == "POST":
+
+        if form.validate_on_submit():
+
+            new_issue = Issue(
+                user_id=current_user.id,
+                title=form.issue_title.data,
+                description=form.issue_description.data,
+            )
+
+            new_issue.save_to_db(db)
+
+            message = "Thank you for your feedback! I'll get back to you as soon as possible :)"
+            return render_template("report_an_issue.html", form=form, message=message)
+        else:
+            error = "Something went wrong. Please refresh the page and try again"
+            return render_template("report_an_issue.html", form=form, error=error)
+
+    return render_template("report_an_issue.html", form=form)
 
 
 @app.route("/reveal_secret_santa", methods=["GET"])

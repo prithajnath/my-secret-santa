@@ -1,16 +1,15 @@
-import json
-
-
-from flask_sqlalchemy import SQLAlchemy, event
-from sqlalchemy.sql import func
-from passlib.hash import pbkdf2_sha256
-from enum import Enum
-from mixins import dbMixin
-from flask_login import UserMixin
-from sqlalchemy.dialects.postgresql import UUID
-from uuid import uuid1, uuid4
-from sql.materialized_views import AllAdminView, AllLatestPairsView
 from datetime import datetime
+from enum import Enum
+from uuid import uuid4
+
+from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy, event
+from passlib.hash import pbkdf2_sha256
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+
+from mixins import dbMixin
+from sql.materialized_views import AllAdminView, AllLatestPairsView
 
 db = SQLAlchemy()
 
@@ -149,7 +148,9 @@ class GroupMessage(dbMixin, UserMixin, db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     sender = db.relationship("User")
     text = db.Column(db.Text, unique=False, nullable=True)
-    created_at = db.Column(db.DateTime)
+    created_at = db.Column(
+        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+    )
 
     def __str__(self):
         return f"{self.group.name} -> {self.created_at}"
@@ -281,6 +282,24 @@ class PasswordReset(dbMixin, db.Model):
     started_at = db.Column(db.DateTime)
     finished_at = db.Column(db.DateTime)
     status = db.Column(db.Enum(ResetStatus))
+
+
+class Issue(dbMixin, UserMixin, db.Model):
+    __tablename__ = "issues"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    title = db.Column(db.String(150), unique=False, nullable=False)
+    description = db.Column(db.Text(), unique=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=func.current_timestamp())
+    updated_at = db.Column(
+        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+    )
+
+    def __str__(self):
+        return f"{self.title} >--< #{self.description}"
+
+    __repr__ = __str__
 
 
 ###########################################################

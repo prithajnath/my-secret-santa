@@ -1,0 +1,43 @@
+{% import "bootstrap/wtf.html" as wtf %} {% extends 'base.html' %} {% block
+content %}
+
+<br /><br />
+<div class="col-sm-2">
+  <img
+    class="img-fluid"
+    src="https://res.cloudinary.com/dzmp7xptn/image/upload/v1732470767/christmas_typewriter_likeyf.jpg"
+  />
+</div>
+
+<div class="col-lg-6">
+  {% if message %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  {% endif %} {% if error %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  {% endif %}
+  <br /><br />
+  <p>
+    Please let me know if there is an issue with the site or anything that can
+    be improved. Appreciate it!
+  </p>
+  <form method="POST" action="/report_issue">
+    <div class="form-group">
+      {{ form.hidden_tag() }} {{ wtf.form_field(form.issue_title) }} {{
+      form.hidden_tag() }} {{ wtf.form_field(form.issue_description) }}
+      <button type="submit" class="santa-button">Submit issue</button>
+    </div>
+  </form>
+  <br /><br />
+</div>
+
+{% endblock %}

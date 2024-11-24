@@ -1,13 +1,22 @@
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField,
-    PasswordField,
     BooleanField,
-    TextAreaField,
     HiddenField,
+    PasswordField,
+    StringField,
     SubmitField,
+    TextAreaField,
 )
 from wtforms.validators import InputRequired, Length
+
+
+class IssueReportForm(FlaskForm):
+    issue_title = StringField(
+        "Issue title", validators=[InputRequired(), Length(min=10, max=150)]
+    )
+    issue_description = TextAreaField(
+        "Issue description", validators=[InputRequired(), Length(min=10, max=500)]
+    )
 
 
 class SignUpForm(FlaskForm):
