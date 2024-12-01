@@ -1,11 +1,10 @@
 import json
 import logging
-import requests
 import os
 
+import requests
+
 from .base import OAuthHandler, OAuthUser
-import urllib.parse as urlparse
-from urllib.parse import urlencode
 
 SITE_DOMAIN = "mysecretsanta.io"
 
@@ -76,8 +75,8 @@ class Google(OAuthHandler):
 
         return {
             "id": user["id"],
-            "first_name": user["given_name"],
-            "last_name": user["family_name"],
+            "first_name": user.get("given_name"),
+            "last_name": user.get("family_name"),
             "email": user["email"],
             "avatar_url": user["picture"],
         }
