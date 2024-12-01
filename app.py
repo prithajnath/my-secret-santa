@@ -9,7 +9,7 @@ from random import choices
 import maya
 import sentry_sdk
 from celery import Celery
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_bootstrap import Bootstrap
 from flask_login import (
     LoginManager,
@@ -755,7 +755,9 @@ def invite():
             if user_id := invite.payload.get("user_id"):
                 if user_id != current_user.id:
                     logger.error(f"Wrong invite code used for user {user_id}")
-                    return redirect("/profile", message="Wrong invite code used")
+                    flash("The invite code is either incorrect or has expired")
+                    return redirect("/profile")
+
                 new_group_assoc = GroupsAndUsersAssociation(
                     group_id=group_id, user_id=current_user.id
                 )
@@ -765,7 +767,8 @@ def invite():
                 user = User.query.filter_by(email=invite.invited_email).first()
                 if user.id != current_user.id:
                     logger.error(f"Wrong invite code used for new user {user.email}")
-                    return redirect("/profile", message="Wrong invite code used")
+                    flash("The invite code is either incorrect or has expired")
+                    return redirect("/profile")
                 new_group_assoc = GroupsAndUsersAssociation(
                     group_id=group_id, user_id=user.id
                 )
@@ -774,9 +777,9 @@ def invite():
         invite.delete_from_db(db)
         return redirect("/groups")
     else:
-        return redirect(
-            "/profile", message="The invite code is either incorrect or has expired"
-        )
+
+        flash("The invite code is either incorrect or has expired")
+        return redirect("/profile")
 
 
 @app.route("/register", methods=["GET", "POST"])
