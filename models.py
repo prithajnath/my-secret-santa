@@ -5,6 +5,9 @@ from uuid import uuid4
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy, event
 from passlib.hash import pbkdf2_sha256
+from sqlalchemy import (
+    TEXT,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -46,7 +49,7 @@ class User(dbMixin, UserMixin, db.Model):
     username = db.Column(db.String(20), unique=True, nullable=False)
     first_name = db.Column(db.String(20), unique=False, nullable=True)
     last_name = db.Column(db.String(20), unique=False, nullable=True)
-    hint = db.Column(db.String(2000), unique=False, nullable=True)
+    hint = db.Column(TEXT, unique=False, nullable=True)
     address = db.Column(db.String(200), unique=False, nullable=True)
     password = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
