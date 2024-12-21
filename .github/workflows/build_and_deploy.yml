@@ -56,7 +56,7 @@ jobs:
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       SENTRY_API_KEY: ${{ secrets.SENTRY_API_KEY }}
     needs: build_container_image
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [ec2]
     steps:
       - uses: actions/checkout@v2
       - run: ./jobs/deploy_all_services.sh
