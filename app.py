@@ -163,10 +163,12 @@ def _loggable_headers():
 
 
 # JWT error handlers
+# These are routine 401s (expired sessions, logged-out clients), so they are logged below
+# ERROR: Sentry turns ERROR log records into issues
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
-    app.logger.error(f"JWT EXPIRED - Headers: {_loggable_headers()}")
-    app.logger.error(f"JWT EXPIRED - Payload: {jwt_payload}")
+    app.logger.info(f"JWT EXPIRED - Headers: {_loggable_headers()}")
+    app.logger.info(f"JWT EXPIRED - Payload: {jwt_payload}")
     return (
         jsonify({"success": False, "error": {"message": "Token has expired"}}),
         401,
@@ -175,8 +177,8 @@ def expired_token_callback(jwt_header, jwt_payload):
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
-    app.logger.error(f"JWT INVALID - Error: {error}")
-    app.logger.error(f"JWT INVALID - Headers: {_loggable_headers()}")
+    app.logger.warning(f"JWT INVALID - Error: {error}")
+    app.logger.warning(f"JWT INVALID - Headers: {_loggable_headers()}")
     return (
         jsonify({"success": False, "error": {"message": "Invalid token"}}),
         401,
@@ -185,8 +187,8 @@ def invalid_token_callback(error):
 
 @jwt.unauthorized_loader
 def missing_token_callback(error):
-    app.logger.error(f"JWT MISSING - Error: {error}")
-    app.logger.error(f"JWT MISSING - Headers: {_loggable_headers()}")
+    app.logger.info(f"JWT MISSING - Error: {error}")
+    app.logger.info(f"JWT MISSING - Headers: {_loggable_headers()}")
     return (
         jsonify(
             {"success": False, "error": {"message": "Authorization header is missing"}}
