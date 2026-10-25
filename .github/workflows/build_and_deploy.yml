@@ -20,7 +20,7 @@ jobs:
       SENTRY_API_KEY: ${{ secrets.SENTRY_API_KEY }}
     runs-on: [digitalocean]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: ./jobs/build_container_image.sh
 
   deploy_all_services_to_digitalocean:
@@ -39,24 +39,5 @@ jobs:
     needs: build_container_image
     runs-on: [digitalocean]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: ./jobs/deploy_all_services_to_digitalocean.sh
-
-  deploy_all_services:
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-      MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
-      SENDGRID_INVITE_TEMPLATE_ID: ${{ secrets.SENDGRID_INVITE_TEMPLATE_ID }}
-      SENDGRID_PAIR_TEMPLATE_ID: ${{ secrets.SENDGRID_PAIR_TEMPLATE_ID }}
-      SENDGRID_RESET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_RESET_PASSWORD_TEMPLATE_ID }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      SENTRY_API_KEY: ${{ secrets.SENTRY_API_KEY }}
-    needs: build_container_image
-    runs-on: [ec2]
-    steps:
-      - uses: actions/checkout@v2
-      - run: ./jobs/deploy_all_services.sh
