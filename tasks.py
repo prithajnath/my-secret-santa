@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+from urllib.parse import quote
 import random
 import sys
 from collections import defaultdict
@@ -36,6 +37,9 @@ celery.conf.task_routes = {
 
 
 logger = logging.getLogger(__name__)
+
+# Public URL of the Next.js frontend, used for links in emails
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://app.mysecretsanta.io").rstrip("/")
 
 # sentry
 if os.getenv("ENV") == "production":
@@ -472,7 +476,7 @@ def _send_secret_santa_email(giver_email, giver_first_name, group_id):
             payload={
                 "group_name": group.name,
                 "santa_name": giver_first_name,
-                "url": "https://app.mysecretsanta.io/login?next=/santa",
+                "url": f"{FRONTEND_URL}/groups/{group_id}",
             },
         )
 
@@ -487,7 +491,7 @@ def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code)
             payload={
                 "admin_first_name": admin_first_name,
                 "invite_for": f"a secret santa draw for the group {group_name}",
-                "url": f"https://app.mysecretsanta.io/signup?next=/invite?code={invite_code}",
+                "url": f"{FRONTEND_URL}/register?next={quote(f'/groups/join?code={invite_code}', safe='')}",
             },
         )
 
@@ -502,7 +506,7 @@ def _invite_user_to_group(to_email, admin_first_name, group_name, invite_code):
             payload={
                 "admin_first_name": admin_first_name,
                 "invite_for": f"a secret santa draw for the group {group_name}",
-                "url": f"https://app.mysecretsanta.io/login?next=/invite?code={invite_code}",
+                "url": f"{FRONTEND_URL}/groups/join?code={invite_code}",
             },
         )
 
@@ -525,7 +529,7 @@ def _send_message_notification(
                 payload={
                     "intro": intro,
                     "text": text,
-                    "url": f"https://app.mysecretsanta.io/login?next=/santa",
+                    "url": f"{FRONTEND_URL}/messages",
                 },
             )
         else:
@@ -548,7 +552,7 @@ def _send_group_chat_notification(
                 payload={
                     "intro": intro,
                     "text": text,
-                    "url": f"https://app.mysecretsanta.io/login?next=/groups?group_id={group_id}",
+                    "url": f"{FRONTEND_URL}/messages/group/{group_id}",
                 },
             )
         else:
