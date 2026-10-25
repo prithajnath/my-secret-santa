@@ -294,6 +294,36 @@ class Message(dbMixin, db.Model):
         return f"{self.created_at}:{self.sender_id} -> {self.receiver_id}"
 
 
+class GroupMessageRead(db.Model):
+    """Newest group chat message a user has seen, for unread counts"""
+
+    __tablename__ = "group_message_reads"
+
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    group_id = db.Column(
+        db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True
+    )
+    last_read_at = db.Column(db.DateTime, nullable=False)
+
+
+class PairMessageRead(db.Model):
+    """Newest santa/santee message a user has seen in a pair channel, for unread counts"""
+
+    __tablename__ = "pair_message_reads"
+
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    channel_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("pairs.channel_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    last_read_at = db.Column(db.DateTime, nullable=False)
+
+
 class EmailInvite(dbMixin, db.Model):
     # This is for email invites to people who haven't already signed up
     # We need to remember what group they were invited to

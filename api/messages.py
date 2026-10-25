@@ -11,6 +11,7 @@ from flask import request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from api import api_bp
+from api.inbox import mark_group_read, mark_pair_read
 from api.utils import api_error, api_response, serialize_group_message, serialize_message
 from models import (
     Group,
@@ -102,6 +103,9 @@ def api_get_group_messages(group_id):
         .order_by(GroupMessage.created_at)
         .all()
     )
+
+    if messages:
+        mark_group_read(user.id, group_id, messages[-1].created_at)
 
     return api_response(
         [serialize_group_message(msg, user.id) for msg in messages]
@@ -303,6 +307,9 @@ def api_get_pair_messages(channel_id):
         .order_by(Message.created_at)
         .all()
     )
+
+    if messages:
+        mark_pair_read(user.id, channel_id, messages[-1].created_at)
 
     return api_response([serialize_message(msg, user.id) for msg in messages])
 

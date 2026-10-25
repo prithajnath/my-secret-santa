@@ -2,7 +2,7 @@
 Groups API endpoints.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flasgger import swag_from
 from flask import request
@@ -24,6 +24,9 @@ from models import (
     db,
 )
 from sql import AdvisoryLock
+
+# A create_pairs task older than this is treated as dead, not in progress
+DRAW_IN_PROGRESS_WINDOW = timedelta(minutes=30)
 
 
 @api_bp.route("/groups", methods=["GET"])
@@ -64,6 +67,19 @@ from sql import AdvisoryLock
                                         "type": "string",
                                         "format": "date-time",
                                     },
+                                    "participating": {
+                                        "type": "boolean",
+                                        "description": "Whether the current user is in this group's draw",
+                                    },
+                                    "pairs_drawn_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "description": "When names were last drawn, or null",
+                                    },
+                                    "draw_status": {
+                                        "type": "string",
+                                        "enum": ["none", "in_progress", "done"],
+                                    },
                                 },
                             },
                         },
@@ -82,9 +98,35 @@ def api_list_groups():
     if not user:
         return api_error("User not found", 404)
 
+    group_ids = [assoc.group_id for assoc in user.groups]
+
+    # Latest draw per group
+    drawn_at = dict(
+        db.session.query(Pair.group_id, func.max(Pair.timestamp))
+        .filter(Pair.group_id.in_(group_ids))
+        .group_by(Pair.group_id)
+        .all()
+    ) if group_ids else {}
+
+    # Draws queued or running. Ignore stale tasks so a crashed job can't look busy forever
+    running_draws = {
+        task.payload.get("group_id")
+        for task in Task.query.filter(
+            Task.name == "create_pairs",
+            Task.status.in_(["starting", "processing"]),
+            Task.started_at >= datetime.now() - DRAW_IN_PROGRESS_WINDOW,
+        )
+    }
+
     groups = []
     for assoc in user.groups:
         group = assoc.group
+        if group.id in running_draws:
+            draw_status = "in_progress"
+        elif drawn_at.get(group.id):
+            draw_status = "done"
+        else:
+            draw_status = "none"
         groups.append(
             {
                 "id": group.id,
@@ -96,6 +138,11 @@ def api_list_groups():
                 "created_at": (
                     group.created_at.isoformat() if group.created_at else None
                 ),
+                "participating": bool(assoc.participating),
+                "pairs_drawn_at": (
+                    drawn_at[group.id].isoformat() if drawn_at.get(group.id) else None
+                ),
+                "draw_status": draw_status,
             }
         )
 
