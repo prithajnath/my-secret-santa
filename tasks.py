@@ -2,7 +2,9 @@ import asyncio
 import json
 import logging
 import os
+import random
 import sys
+from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from random import uniform
@@ -54,6 +56,8 @@ if os.getenv("ENV") == "production":
 def send_email(to: str, subject: str, template_name: str, payload: Dict):
     if mailgun_api_key := os.getenv("MAILGUN_API_KEY"):
         domain_name = "www.mysecretsanta.io"
+
+        # 1. Send the email
         response = requests.post(
             f"https://api.mailgun.net/v3/{domain_name}/messages",
             auth=("api", mailgun_api_key),
@@ -66,11 +70,59 @@ def send_email(to: str, subject: str, template_name: str, payload: Dict):
             },
         )
 
-        logger.debug(response.status_code)
+        logger.debug(f"Send Status: {response.status_code}")
         logger.debug(response.content)
-        logger.debug(response.headers)
+
+        if response.status_code == 200:
+            try:
+                # 2. Extract and clean the Message ID (remove < and >)
+                # Response format: {"id": "<2025...@domain>", "message": "..."}
+                raw_id = response.json().get("id", "")
+                clean_message_id = raw_id.strip("<>")
+
+                logger.debug(f"Tracking status for message_id: {clean_message_id}")
+
+                # 3. Poll for status (5 attempts)
+                for attempt in range(1, 6):
+                    sleep(2)  # Wait 2 seconds between tries to allow propagation
+
+                    events_response = requests.get(
+                        f"https://api.mailgun.net/v3/{domain_name}/events",
+                        auth=("api", mailgun_api_key),
+                        params={
+                            "message-id": clean_message_id,
+                            "limit": 1,  # We only need the latest event
+                        },
+                    )
+
+                    if events_response.status_code == 200:
+                        events = events_response.json().get("items", [])
+                        if events:
+                            # The most recent event is usually first
+                            latest_event = events[0]
+                            status = latest_event.get("event")
+
+                            logger.debug(f"Attempt {attempt}: Status is '{status}'")
+
+                            # 'accepted' = queued by Mailgun
+                            # 'delivered' = accepted by recipient server
+                            # 'failed' / 'rejected' = permanent failure
+                            if status in ["failed", "rejected"]:
+                                logger.error(f"{status}: sending email to {to}")
+                            return status
+                    else:
+                        logger.error(
+                            f"Failed to query events: {events_response.status_code}"
+                        )
+
+                logger.debug(
+                    "Final status check: Status unknown or pending after 5 attempts."
+                )
+
+            except json.JSONDecodeError:
+                logger.error("Failed to decode JSON response from Mailgun.")
     else:
-        logger.debug(f"pretending to send and email to {to}")
+        logger.debug(f"pretending to send an email to {to}")
 
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
@@ -245,6 +297,153 @@ def _make_pairs(pipe={}):
             final_pairs.append(giver.email)
 
             new_pair.save_to_db(db)
+
+        return {**pipe, "final_pairs": final_pairs}
+
+
+@network_exception_retry
+def _make_pairs_graph_based(pipe={}):
+    """
+    Create pairs using a graph-based approach that avoids last year's pairings.
+
+    Algorithm:
+    1. Create a graph where each node is a user
+    2. Each edge to another user has a random weight
+    3. Query last year's pairs (most recent pairs for this group) to get illegal edges
+    4. Remove illegal edges from the graph
+    5. Start from a random node and traverse the graph to create pairs
+    """
+    group_id = pipe["group_id"]
+    with app.app_context():
+        group = Group.query.filter_by(id=group_id).first()
+
+        # Get all participating users
+        participating_users = []
+        for user_association in group.users:
+            if user_association.participating:
+                participating_users.append(user_association.user)
+
+        if len(participating_users) < 2:
+            logger.warning(f"Not enough participating users in group {group_id}")
+            return {**pipe, "final_pairs": []}
+
+        # Use SQLAlchemy Core to get last year's pairs (most recent pairs for this group)
+        # We'll get the most recent pairing timestamp and all pairs from that timestamp
+        pairs_table = Pair.__table__
+
+        # Get the most recent pair timestamp for this group (excluding current pairing if any)
+        max_timestamp_query = select(func.max(pairs_table.c.timestamp)).where(
+            pairs_table.c.group_id == group_id
+        )
+        max_timestamp_result = db.session.execute(max_timestamp_query).scalar()
+
+        illegal_edges = set()
+        if max_timestamp_result:
+            # Get all pairs from the most recent pairing (last year's pairs)
+            last_year_pairs_query = select(
+                pairs_table.c.giver_id, pairs_table.c.receiver_id
+            ).where(
+                and_(
+                    pairs_table.c.group_id == group_id,
+                    pairs_table.c.timestamp == max_timestamp_result,
+                )
+            )
+
+            last_year_pairs = db.session.execute(last_year_pairs_query).fetchall()
+            for giver_id, receiver_id in last_year_pairs:
+                illegal_edges.add((giver_id, receiver_id))
+
+        logger.debug(f"Found {len(illegal_edges)} illegal edges from last year's pairs")
+
+        # Create graph: user_id -> list of (target_user_id, weight) tuples
+        graph = defaultdict(list)
+        user_ids = [user.id for user in participating_users]
+        user_id_to_user = {user.id: user for user in participating_users}
+
+        # Build graph with random weights, excluding illegal edges
+        for giver_id in user_ids:
+            for receiver_id in user_ids:
+                if giver_id != receiver_id:
+                    # Skip if this edge is illegal (last year's pair)
+                    if (giver_id, receiver_id) not in illegal_edges:
+                        # Assign random weight to this edge
+                        weight = random.random()
+                        graph[giver_id].append((receiver_id, weight))
+
+        # Verify we have enough valid edges for all users
+        for user_id in user_ids:
+            if not graph[user_id]:
+                logger.warning(
+                    f"User {user_id} has no valid edges after removing illegal ones. "
+                    "Falling back to allowing all edges."
+                )
+                # Fallback: allow all edges if graph is too constrained
+                graph[user_id] = [
+                    (receiver_id, random.random())
+                    for receiver_id in user_ids
+                    if receiver_id != user_id
+                ]
+
+        # Traverse graph to create pairs
+        # Start from a random node
+        start_user_id = random.choice(user_ids)
+        visited = set()
+        pairs_order = []
+        current_user_id = start_user_id
+
+        # Greedy traversal: at each step, pick the edge with highest weight to an unvisited node
+        while len(visited) < len(user_ids):
+            visited.add(current_user_id)
+            pairs_order.append(current_user_id)
+
+            if len(visited) == len(user_ids):
+                # All nodes visited, complete the cycle
+                break
+
+            # Find the best next node (highest weight to an unvisited node)
+            available_edges = [
+                (receiver_id, weight)
+                for receiver_id, weight in graph[current_user_id]
+                if receiver_id not in visited
+            ]
+
+            if not available_edges:
+                # No valid edges, pick any unvisited node
+                unvisited = [uid for uid in user_ids if uid not in visited]
+                if unvisited:
+                    current_user_id = random.choice(unvisited)
+                else:
+                    break
+            else:
+                # Sort by weight (descending) and pick the best one
+                available_edges.sort(key=lambda x: x[1], reverse=True)
+                current_user_id = available_edges[0][0]
+
+        # Create pairs: each user gives to the next user in the cycle
+        final_pairs = []
+        pair_timestamp = datetime.now()
+
+        for i, giver_id in enumerate(pairs_order):
+            # Next user in cycle (wrap around)
+            receiver_id = pairs_order[(i + 1) % len(pairs_order)]
+
+            giver = user_id_to_user[giver_id]
+            receiver = user_id_to_user[receiver_id]
+
+            new_pair = Pair(
+                group=group,
+                receiver=receiver,
+                giver=giver,
+                timestamp=pair_timestamp,
+                channel_id=str(uuid4()),
+            )
+
+            final_pairs.append(giver.email)
+            new_pair.save_to_db(db)
+
+        logger.info(
+            f"Created {len(final_pairs)} pairs using graph-based method for group {group_id}"
+        )
 
         return {**pipe, "final_pairs": final_pairs}
 
@@ -666,7 +865,7 @@ def make_pairs(group_id):
 
         for attempt in range(1000):
             logger.info(f"Attempting to create pairs for {attempt + 1} time")
-            result = chain(_make_pairs_async, _make_pairs, pipe={"group_id": group_id})
+            result = chain(_make_pairs_graph_based, pipe={"group_id": group_id})
 
             if not isinstance(result, RetryException):
                 if not result["final_pairs"]:

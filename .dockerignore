@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.env
+*.env
+*.pem
+.aws
+.claude
+.vscode
+.mypy_cache
+.pytest_cache
+**/__pycache__
+node_modules
+backup.sql

@@ -14,7 +14,10 @@ black $touched_python_files
 git add $touched_python_files
 
 
-# Hook to make sure requirements.txt is always in sync with Pipfile
-[ ! -z "$(diff <(pipenv lock -r) <(cat $(pwd)/requirements.txt))" ] && echo "ABORTING COMMIT :: PLEASE FIX :: requirements.txt needs to be in sync with Pipfile" && exit 1
+# Hook to make sure uv.lock is in sync with pyproject.toml
+uv lock --check --quiet || { echo "ABORTING COMMIT :: PLEASE FIX :: uv.lock is out of date, run: uv lock" && exit 1; }
+
+# Hook to make sure requirements.txt is always in sync with uv.lock (header comments ignored)
+[ ! -z "$(diff <(uv export --format requirements.txt --frozen --quiet | grep -v '^#') <(grep -v '^#' $(pwd)/requirements.txt))" ] && echo "ABORTING COMMIT :: PLEASE FIX :: requirements.txt needs to be in sync with uv.lock, run: uv export --format requirements.txt -o requirements.txt" && exit 1
 
 exit 0

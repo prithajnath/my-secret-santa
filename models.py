@@ -1,9 +1,8 @@
-from datetime import datetime
 from enum import Enum
 from uuid import uuid4
 
 from flask_login import UserMixin
-from flask_sqlalchemy import SQLAlchemy, event
+from flask_sqlalchemy import SQLAlchemy
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy import (
     TEXT,
@@ -27,7 +26,7 @@ class OAuthProviderEnum(Enum):
     GITLAB = 2
 
 
-class GroupsAndUsersAssociation(dbMixin, UserMixin, db.Model):
+class GroupsAndUsersAssociation(dbMixin, db.Model):
     __tablename__ = "groups_and_users"
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
@@ -59,7 +58,7 @@ class User(dbMixin, UserMixin, db.Model):
     last_logged_out = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=func.current_timestamp())
     updated_at = db.Column(
-        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+        db.DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
 
     def __init__(
@@ -107,11 +106,11 @@ class UserOAuthProfile(dbMixin, db.Model):
     avatar_url = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=func.current_timestamp())
     last_logged_in = db.Column(
-        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+        db.DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
 
 
-class Group(dbMixin, UserMixin, db.Model):
+class Group(dbMixin, db.Model):
     __tablename__ = "groups"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -122,7 +121,7 @@ class Group(dbMixin, UserMixin, db.Model):
         db.DateTime, default=func.current_timestamp(), nullable=False
     )
     updated_at = db.Column(
-        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+        db.DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
 
     def __init__(self, name):
@@ -132,8 +131,10 @@ class Group(dbMixin, UserMixin, db.Model):
         return self.name
 
     def is_admin(self, user):
-        admin_of = all_admin_materialized_view.query.filter_by(
-            user_id=user.id, group_id=self.id
+        # Read the association table directly: all_admin_view is a materialized
+        # view and goes stale until refreshed (e.g. for groups created via the API)
+        admin_of = GroupsAndUsersAssociation.query.filter_by(
+            user_id=user.id, group_id=self.id, group_admin=True
         )
         if admin_of.first():
             return True
@@ -142,7 +143,7 @@ class Group(dbMixin, UserMixin, db.Model):
     __repr__ = __str__
 
 
-class GroupMessage(dbMixin, UserMixin, db.Model):
+class GroupMessage(dbMixin, db.Model):
     __tablename__ = "group_messages"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -152,7 +153,7 @@ class GroupMessage(dbMixin, UserMixin, db.Model):
     sender = db.relationship("User")
     text = db.Column(db.Text, unique=False, nullable=True)
     created_at = db.Column(
-        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+        db.DateTime, default=func.current_timestamp()
     )
 
     def __str__(self):
@@ -177,7 +178,7 @@ class GroupPairReveals(dbMixin, db.Model):
     __repr__ = __str__
 
 
-class Pair(dbMixin, UserMixin, db.Model):
+class Pair(dbMixin, db.Model):
     __tablename__ = "pairs"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -287,7 +288,7 @@ class PasswordReset(dbMixin, db.Model):
     status = db.Column(db.Enum(ResetStatus))
 
 
-class Issue(dbMixin, UserMixin, db.Model):
+class Issue(dbMixin, db.Model):
     __tablename__ = "issues"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -296,7 +297,7 @@ class Issue(dbMixin, UserMixin, db.Model):
     description = db.Column(db.Text(), unique=False, nullable=False)
     created_at = db.Column(db.DateTime, default=func.current_timestamp())
     updated_at = db.Column(
-        db.DateTime, default=func.current_timestamp(), onupdate=datetime.now
+        db.DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
     )
 
     def __str__(self):
@@ -308,28 +309,3 @@ class Issue(dbMixin, UserMixin, db.Model):
 ###########################################################
 #              MATERIALIZED VIEWS                         #
 ###########################################################
-
-# "before_insert" HOOKS
-
-
-@event.listens_for(GroupsAndUsersAssociation, "before_insert", once=True)
-def create_group_admin_materialized_view(mapper, connection, target):
-    all_admin_materialized_view.create()
-
-
-@event.listens_for(Pair, "before_insert", once=True)
-def create_all_latest_pairs_view(mapper, connection, target):
-    all_latest_pairs_view.create()
-
-
-# "after_insert" HOOKS
-
-
-@event.listens_for(GroupsAndUsersAssociation, "after_insert")
-def refresh_group_admin_materialized_view(mapper, connection, target):
-    all_admin_materialized_view.refresh()
-
-
-@event.listens_for(Pair, "after_insert")
-def refresh_all_latest_pairs_view(mapper, connection, target):
-    all_latest_pairs_view.refresh()

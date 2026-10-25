@@ -30,11 +30,25 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
 
 RUN apt update && apt install -y postgresql-client
 
+# uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.0 /uv /uvx /bin/
+
+# Keep the venv outside the app dir so the dev bind mount (.:/usr/bin/secretsanta)
+# doesn't shadow it with the host's .venv
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+	UV_PYTHON_DOWNLOADS=never \
+	UV_COMPILE_BYTECODE=1 \
+	UV_LINK_MODE=copy \
+	PATH="/opt/venv/bin:$PATH"
+
 WORKDIR /usr/bin/secretsanta
+
+# Install dependencies first so this layer is cached until the lockfile changes
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --frozen --no-dev
 
 COPY . .
 
-RUN pip install -r requirements.txt
 RUN chmod u+x entrypoint.sh
 RUN chmod u+x dev-entrypoint.sh
 RUN chmod u+x celery-init.sh

@@ -17,7 +17,7 @@ CREATE MATERIALIZED VIEW all_latest_pairs_view AS(
         LEFT JOIN groups d 
         ON a.group_id = d.id
     ) SELECT 
-        uuid_generate_v4() AS id,
+        gen_random_uuid() AS id,
         giver_username, 
         receiver_username, 
         channel_id,

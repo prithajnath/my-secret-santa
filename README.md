@@ -46,6 +46,147 @@ This aborts a commit if your `requirements.txt` is out of sync. Update `requirem
 $ pipenv lock -r > requirements.txt
 $ git commit -m "hey hey ho ho"
 ```
+
+## REST API
+
+The application includes a REST API layer for modern frontend frameworks (React, Next.js, etc.) with JWT authentication.
+
+### API Documentation
+
+Interactive Swagger documentation is available at:
+```
+http://localhost:9000/api/docs/
+```
+
+### Authentication
+
+The API uses JWT Bearer tokens. Include the token in the `Authorization` header:
+```
+Authorization: Bearer <your_access_token>
+```
+
+### Endpoints Overview
+
+| Category | Endpoints |
+|----------|-----------|
+| Auth | `/api/auth/register`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` |
+| OAuth | `/api/auth/oauth/google/url`, `/api/auth/oauth/google/callback` |
+| Users | `/api/users/me`, `/api/users/<username>` |
+| Groups | `/api/groups`, `/api/groups/<id>`, `/api/groups/<id>/members`, `/api/groups/<id>/pairs` |
+| Messages | `/api/groups/<id>/messages`, `/api/pairs/<channel_id>/messages` |
+| Santa | `/api/santa`, `/api/santa/reveal` |
+
+### Quick Start
+
+```javascript
+// Login
+const res = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'user', password: 'password' })
+});
+const { data } = await res.json();
+const token = data.access_token;
+
+// Use authenticated endpoints
+const groups = await fetch('/api/groups', {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+```
+
+## Google OAuth Integration
+
+The API supports Google OAuth for sign-in/sign-up using the token exchange pattern.
+
+### Setup
+
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable the Google+ API
+3. Create OAuth 2.0 credentials (Web application)
+4. Add your frontend callback URL to **Authorized redirect URIs** (e.g., `https://yourapp.com/oauth/callback`)
+5. Set environment variables:
+   ```bash
+   export GOOGLE_CLIENT_ID="your-client-id"
+   export GOOGLE_CLIENT_SECRET="your-client-secret"
+   ```
+
+### OAuth Flow
+
+#### Step 1: Get OAuth URL
+
+```javascript
+const redirectUri = `${window.location.origin}/oauth/callback`;
+const res = await fetch(
+  `/api/auth/oauth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`
+);
+const { data } = await res.json();
+
+// Redirect user to Google
+window.location.href = data.oauth_url;
+```
+
+#### Step 2: Handle Callback
+
+After the user authorizes, Google redirects to your callback URL with a `code` parameter:
+
+```javascript
+// On your /oauth/callback page
+const handleOAuthCallback = async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+
+  const res = await fetch('/api/auth/oauth/google/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code,
+      redirect_uri: `${window.location.origin}/oauth/callback`
+    })
+  });
+
+  const { data } = await res.json();
+
+  // Store tokens
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('refresh_token', data.refresh_token);
+
+  // Check if new user for onboarding
+  if (data.user.is_new_user) {
+    router.push('/welcome');
+  } else {
+    router.push('/dashboard');
+  }
+};
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 123,
+      "username": "john",
+      "email": "john@gmail.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "avatar_url": "https://...",
+      "is_new_user": false
+    },
+    "access_token": "eyJ...",
+    "refresh_token": "eyJ..."
+  }
+}
+```
+
+### Notes
+
+- New users are automatically created on first Google login
+- Username is auto-generated from Google profile name
+- `is_new_user` flag helps identify first-time users for onboarding flows
+- The `redirect_uri` must match exactly in both the URL request and callback exchange
+
 ### NOTE: If your system Python is not 3.10
 This is probably fine but can cause issues. In that case, just add the deadsnakes PPA and download Python 3.10. DO NOT try changing your system Python by updating the `python3` symlink. If you had already created a virtualenv with pipenv, you'll have to remove it first and then create another virtualenv that uses Python 3.10
 

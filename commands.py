@@ -1,15 +1,19 @@
-from models import User, Group, GroupsAndUsersAssociation
+import click
 from getpass import getpass
-from flask_script import Command
 from faker import Faker
-from app import db
 from os import environ
 from random import choice, choices
 from uuid import uuid4
+from datetime import datetime
 
 
-class CreateSuperUser(Command):
-    def run(self):
+def register_commands(app, db):
+    """Register CLI commands with the Flask app."""
+    from models import User, Group, GroupsAndUsersAssociation, Message, Pair
+
+    @app.cli.command("createsuperuser")
+    def create_superuser():
+        """Create a new superuser."""
         username = input("Enter superuser user name : ")
         email = input("Enter superuser email : ")
         password = getpass("Enter superuser password : ")
@@ -19,11 +23,11 @@ class CreateSuperUser(Command):
         )
 
         new_superuser.save_to_db(db)
-        print(f"superuser {username} : {email} created successfully")
+        click.echo(f"superuser {username} : {email} created successfully")
 
-
-class SeedDatabase(Command):
-    def run(self):
+    @app.cli.command("seed")
+    def seed_database():
+        """Seed the database with fake data (non-production only)."""
         if environ.get("ENV") != "production":
             fake = Faker()
 
@@ -34,7 +38,7 @@ class SeedDatabase(Command):
                     :20
                 ]
                 email = f"{username}_{uuid4().__str__()[:8]}@santa.io"
-                print(f"adding {username}")
+                click.echo(f"adding {username}")
                 random_user = User(
                     username=username,
                     first_name=first_name,
@@ -62,5 +66,41 @@ class SeedDatabase(Command):
                         group_assoc.save_to_db(db)
                         distinct.add((member.id, group.id))
 
+                dt = datetime.now()
+                for i in range(len(members)):
+                    user1, user2 = members[i], members[(i + 1) % len(members)]
+                    click.echo(f"Pairing {user1} and {user2}")
+
+                    pair_channel_id = str(uuid4())
+                    pair = Pair(
+                        channel_id=pair_channel_id,
+                        timestamp=dt,
+                        group_id=group.id,
+                        giver_id=user1.id,
+                        receiver_id=user2.id,
+                    )
+
+                    pair.save_to_db(db)
+                    click.echo(f"Adding messages for {user1} and {user2}")
+                    # create some back and forth (10 messages)
+                    for j in range(10):
+                        if j % 2 == 0:
+                            # user1 sends a message to user2
+                            message = Message(
+                                pair_channel_id=pair_channel_id,
+                                sender_id=user1.id,
+                                receiver_id=user2.id,
+                                text=fake.words(choice((5, 10, 20))),
+                            )
+                        else:
+                            # user2 sends a message to user1
+                            message = Message(
+                                pair_channel_id=pair_channel_id,
+                                sender_id=user2.id,
+                                receiver_id=user1.id,
+                                text=fake.words(choice((5, 10, 20))),
+                            )
+                        message.save_to_db(db)
+
         else:
-            print("Can't run this command in production")
+            click.echo("Can't run this command in production")

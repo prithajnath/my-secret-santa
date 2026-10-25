@@ -57,13 +57,13 @@ class AdvisoryLock:
 
             # *
             advisory_lock = session.execute(
-                select([func.pg_try_advisory_lock(advisory_lock_key)])
-            ).fetchone()[0]
+                select(func.pg_try_advisory_lock(advisory_lock_key))
+            ).scalar()
 
             yield (advisory_lock, session)
 
             # **
-            session.execute(select([func.pg_advisory_unlock(advisory_lock_key)]))
+            session.execute(select(func.pg_advisory_unlock(advisory_lock_key)))
 
         except:
             session.rollback()

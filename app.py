@@ -20,6 +20,8 @@ from flask_login import (
 )
 from flask_mail import Mail
 from flask_migrate import Migrate
+from flasgger import Swagger
+from flask_jwt_extended import JWTManager
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import and_, func, or_
 
@@ -58,6 +60,7 @@ from models import (
 )
 from serializers import ma
 from sql import AdvisoryLock
+from commands import register_commands
 
 app = Flask(__name__)
 app.config.update(
@@ -70,9 +73,12 @@ app.config.update(
         MAIL_USERNAME=f"{os.environ.get('MAIL_USERNAME')}@gmail.com",
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
         SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL"),
-        SQLALCHEMY_TRACK_MODIFICATIONS=True,
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SECRET_KEY=os.environ.get("SECRET_KEY"),
-        CSRF_ENABLED=True,
+        # JWT Configuration
+        JWT_SECRET_KEY=os.environ.get("JWT_SECRET_KEY", os.environ.get("SECRET_KEY")),
+        JWT_ACCESS_TOKEN_EXPIRES=3600,  # 1 hour
+        JWT_REFRESH_TOKEN_EXPIRES=2592000,  # 30 days
     )
 )
 
@@ -87,6 +93,97 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 csrf.init_app(app)
 
+# JWT setup
+jwt = JWTManager(app)
+
+# Register API blueprint and exempt from CSRF
+from api import api_bp
+
+app.register_blueprint(api_bp)
+csrf.exempt(api_bp)
+
+# Swagger configuration
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": "apispec",
+            "route": "/apispec.json",
+            "rule_filter": lambda rule: rule.rule.startswith("/api"),
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/api/docs/",
+}
+
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "My Secret Santa API",
+        "description": "REST API for the Secret Santa application",
+        "version": "1.0.0",
+        "contact": {
+            "name": "API Support",
+        },
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+        }
+    },
+    "security": [{"Bearer": []}],
+    "tags": [
+        {"name": "Auth", "description": "Authentication endpoints"},
+        {"name": "Users", "description": "User profile endpoints"},
+        {"name": "Groups", "description": "Group management endpoints"},
+        {"name": "Messages", "description": "Messaging endpoints"},
+        {"name": "Santa", "description": "Secret Santa relationship endpoints"},
+        {"name": "Invites", "description": "Invite management endpoints"},
+        {"name": "Issues", "description": "Issue reporting endpoints"},
+    ],
+}
+
+swagger = Swagger(app, config=swagger_config, template=swagger_template)
+
+
+# JWT error handlers
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    app.logger.error(f"JWT EXPIRED - Headers: {dict(request.headers)}")
+    app.logger.error(f"JWT EXPIRED - Payload: {jwt_payload}")
+    return (
+        jsonify({"success": False, "error": {"message": "Token has expired"}}),
+        401,
+    )
+
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    app.logger.error(f"JWT INVALID - Error: {error}")
+    app.logger.error(f"JWT INVALID - Headers: {dict(request.headers)}")
+    return (
+        jsonify({"success": False, "error": {"message": "Invalid token"}}),
+        401,
+    )
+
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    app.logger.error(f"JWT MISSING - Error: {error}")
+    app.logger.error(f"JWT MISSING - Headers: {dict(request.headers)}")
+    return (
+        jsonify(
+            {"success": False, "error": {"message": "Authorization header is missing"}}
+        ),
+        401,
+    )
+
+
 celery = Celery("tasks", broker=os.environ.get("CELERY_BROKER_URL"))
 
 if os.getenv("ENV") == "production":
@@ -97,6 +194,7 @@ else:
     logger = app.logger
 
 migrate = Migrate(app, db)
+register_commands(app, db)
 
 # sentry
 if os.getenv("ENV") == "production":
@@ -123,7 +221,7 @@ OAUTH_CLIENTS = {
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(user_id)
+    return db.session.get(User, user_id)
 
 
 @login_manager.unauthorized_handler
@@ -856,7 +954,8 @@ def signup():
 def group_message():
     group_id = request.args.get("group_id")
     if request.method == "POST":
-        message = request.json.get("message")
+        data = request.get_json() or {}
+        message = data.get("message")
 
         last_message = (
             GroupMessage.query.filter_by(group_id=group_id)
@@ -936,7 +1035,8 @@ def santee_message():
     santee = User.query.filter_by(username=to).first()
 
     if request.method == "POST":
-        message = request.json.get("message")
+        data = request.get_json() or {}
+        message = data.get("message")
         new_message = Message(
             sender_id=current_user.id,
             receiver_id=santee.id,
@@ -999,7 +1099,8 @@ def santa_message():
     secret_santa = User.query.filter_by(username=secret_santa_for_this_group).first()
 
     if request.method == "POST":
-        message = request.json.get("message")
+        data = request.get_json() or {}
+        message = data.get("message")
         new_message = Message(
             sender_id=current_user.id,
             receiver_id=secret_santa.id,
@@ -1051,8 +1152,9 @@ def santa_message():
 @app.route("/reveal_toggle", methods=["POST"])
 @login_required
 def reveal_group_santas():
-    group_id = request.json.get("group_id")
-    action = request.json.get("action")
+    data = request.get_json() or {}
+    group_id = data.get("group_id")
+    action = data.get("action")
     group = Group.query.filter_by(id=group_id).first()
     if group:
         with AdvisoryLock(

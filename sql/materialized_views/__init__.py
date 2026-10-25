@@ -1,5 +1,6 @@
 import logging
 from sqlalchemy.exc import ProgrammingError, NoSuchTableError
+from sqlalchemy import text
 from sqlalchemy.schema import Table, MetaData
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -18,7 +19,7 @@ class MaterializedView:
         try:
             with self.conn.engine.begin() as connection:
                 logger.info(f"creating mat view {self.name}")
-                connection.execute(self.ddl)
+                connection.execute(text(self.ddl))
         except ProgrammingError as e:
             if f"relation '{self.name}'already exists" in e.__str__():
                 logger.debug(
@@ -28,10 +29,11 @@ class MaterializedView:
     def refresh(self):
         logger.debug(f"refreshing materialized view {self.name}")
         with self.conn.engine.begin() as connection:
-            connection.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {self.name}")
+            connection.execute(text(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {self.name}"))
 
     def drop(self):
-        self.conn.engine.execute(f"DROP MATERIALIZED VIEW IF EXISTS {self.name}")
+        with self.conn.engine.begin() as connection:
+            connection.execute(text(f"DROP MATERIALIZED VIEW IF EXISTS {self.name}"))
 
     @property
     def query(self):
@@ -46,7 +48,7 @@ class MaterializedView:
                 {
                     "__table__": Table(
                         self.name,
-                        MetaData(bind=self.conn.engine),
+                        MetaData(),
                         self.conn.Column("id", UUID(as_uuid=True), primary_key=True),
                         autoload_with=self.conn.engine,
                     )
@@ -61,7 +63,7 @@ class MaterializedView:
                 {
                     "__table__": Table(
                         self.name,
-                        MetaData(bind=self.conn.engine),
+                        MetaData(),
                         self.conn.Column("id", UUID(as_uuid=True), primary_key=True),
                         autoload_with=self.conn.engine,
                     )

@@ -1,0 +1,1973 @@
+{
+  "definitions": {},
+  "info": {
+    "contact": {
+      "name": "API Support"
+    },
+    "description": "REST API for the Secret Santa application",
+    "title": "My Secret Santa API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/auth/change-password": {
+      "post": {
+        "description": "Change the current user's password",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "current_password": {
+                  "example": "oldpassword123",
+                  "type": "string"
+                },
+                "new_password": {
+                  "example": "newpassword456",
+                  "maxLength": 80,
+                  "minLength": 8,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "current_password",
+                "new_password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password changed successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "example": "Password changed successfully",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Current password is incorrect"
+          }
+        },
+        "summary": "Change the current user's password.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "description": "Authenticate with username and password to receive JWT tokens",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "password": {
+                  "example": "securepassword123",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "johndoe",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "username",
+                "password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "properties": {
+                        "admin": {
+                          "type": "boolean"
+                        },
+                        "avatar_url": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "integer"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Missing credentials"
+          },
+          "401": {
+            "description": "Invalid username or password"
+          }
+        },
+        "security": [],
+        "summary": "Login and receive JWT tokens.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Logout the current user",
+        "responses": {
+          "200": {
+            "description": "Successfully logged out",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "example": "Successfully logged out",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        },
+        "summary": "Logout the current user.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/oauth/google/callback": {
+      "post": {
+        "description": "Exchange the authorization code received from Google OAuth callback for JWT access and refresh tokens. Creates a new user account if one doesn't exist for the Google email.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "code": {
+                  "description": "Authorization code from Google OAuth callback",
+                  "type": "string"
+                },
+                "redirect_uri": {
+                  "description": "The same redirect_uri used when generating the OAuth URL",
+                  "example": "https://myapp.com/oauth/callback",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "redirect_uri"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth successful, JWT tokens returned",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "properties": {
+                        "avatar_url": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "integer"
+                        },
+                        "is_new_user": {
+                          "description": "True if account was just created",
+                          "type": "boolean"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Missing code or redirect_uri"
+          },
+          "401": {
+            "description": "Invalid authorization code"
+          },
+          "500": {
+            "description": "Google OAuth not configured or Google API error"
+          }
+        },
+        "security": [],
+        "summary": "Exchange Google OAuth authorization code for JWT tokens.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/oauth/google/url": {
+      "get": {
+        "description": "Get the Google OAuth authorization URL. The frontend should redirect the user to this URL to initiate the OAuth flow.",
+        "parameters": [
+          {
+            "description": "The URI where Google should redirect after authorization (must be registered in Google Console)",
+            "example": "https://myapp.com/oauth/callback",
+            "in": "query",
+            "name": "redirect_uri",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Optional state parameter to pass through the OAuth flow (e.g., for deep linking)",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth URL generated",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "oauth_url": {
+                      "description": "URL to redirect user to",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Missing redirect_uri parameter"
+          }
+        },
+        "security": [],
+        "summary": "Generate Google OAuth authorization URL for frontend.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "description": "Get a new access token using a valid refresh token",
+        "responses": {
+          "200": {
+            "description": "New access token generated",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          }
+        },
+        "summary": "Get a new access token using a refresh token.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "description": "Create a new user account and receive JWT tokens",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "john@example.com",
+                  "format": "email",
+                  "type": "string"
+                },
+                "first_name": {
+                  "example": "John",
+                  "maxLength": 150,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                "last_name": {
+                  "example": "Doe",
+                  "maxLength": 150,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                "password": {
+                  "example": "securepassword123",
+                  "maxLength": 80,
+                  "minLength": 8,
+                  "type": "string"
+                },
+                "username": {
+                  "example": "johndoe",
+                  "maxLength": 150,
+                  "minLength": 4,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "username",
+                "email",
+                "password",
+                "first_name",
+                "last_name"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "properties": {
+                        "avatar_url": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "integer"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "409": {
+            "description": "Username or email already exists"
+          }
+        },
+        "security": [],
+        "summary": "Register a new user account.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "description": "Request a password reset email. A temporary password will be sent to the email if it exists.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "john@example.com",
+                  "format": "email",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reset request processed",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "429": {
+            "description": "Too many reset attempts"
+          }
+        },
+        "security": [],
+        "summary": "Request a password reset.",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/groups": {
+      "get": {
+        "description": "Get all groups the authenticated user is a member of",
+        "responses": {
+          "200": {
+            "description": "List of groups",
+            "schema": {
+              "properties": {
+                "data": {
+                  "items": {
+                    "properties": {
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "id": {
+                        "example": 1,
+                        "type": "integer"
+                      },
+                      "is_admin": {
+                        "example": true,
+                        "type": "boolean"
+                      },
+                      "member_avatars": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "member_count": {
+                        "example": 5,
+                        "type": "integer"
+                      },
+                      "name": {
+                        "example": "Family Secret Santa",
+                        "type": "string"
+                      },
+                      "reveal_latest_pairs": {
+                        "example": false,
+                        "type": "boolean"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        },
+        "summary": "List all groups the current user is a member of.",
+        "tags": [
+          "Groups"
+        ]
+      },
+      "post": {
+        "description": "Create a new Secret Santa group. The creator becomes the group admin.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "name": {
+                  "example": "Office Secret Santa 2024",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Group created successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "member_count": {
+                      "type": "integer"
+                    },
+                    "members": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "reveal_latest_pairs": {
+                      "type": "boolean"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "409": {
+            "description": "Group name already exists"
+          }
+        },
+        "summary": "Create a new group.",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/groups/{group_id}": {
+      "get": {
+        "description": "Get detailed information about a specific group including all members",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group details retrieved successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "member_count": {
+                      "type": "integer"
+                    },
+                    "members": {
+                      "items": {
+                        "properties": {
+                          "avatar_url": {
+                            "type": "string"
+                          },
+                          "first_name": {
+                            "type": "string"
+                          },
+                          "is_admin": {
+                            "type": "boolean"
+                          },
+                          "last_name": {
+                            "type": "string"
+                          },
+                          "participating": {
+                            "type": "boolean"
+                          },
+                          "user_id": {
+                            "type": "integer"
+                          },
+                          "username": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "reveal_latest_pairs": {
+                      "type": "boolean"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Not a member of this group"
+          },
+          "404": {
+            "description": "Group not found"
+          }
+        },
+        "summary": "Get a specific group's details.",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/groups/{group_id}/members": {
+      "post": {
+        "description": "Send an email invitation to join the group. If the user doesn't have an account, they'll be invited to sign up.",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "friend@example.com",
+                  "format": "email",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Invitation sent successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Not a member of this group"
+          },
+          "404": {
+            "description": "Group not found"
+          }
+        },
+        "summary": "Invite a user to join a group.",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/groups/{group_id}/members/{user_id}": {
+      "delete": {
+        "description": "Remove a member from the group. Only group admins can perform this action.",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "description": "User ID to remove",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member removed successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Cannot kick yourself"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Only admins can remove members"
+          },
+          "404": {
+            "description": "Group or user not found"
+          }
+        },
+        "summary": "Kick a member from a group (admin only).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/groups/{group_id}/membership": {
+      "delete": {
+        "description": "Remove yourself from a group",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully left the group",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "description": "Group not found or not a member"
+          }
+        },
+        "summary": "Leave a group.",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/groups/{group_id}/messages": {
+      "get": {
+        "description": "Retrieve all messages in a group's chat",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of group messages",
+            "schema": {
+              "properties": {
+                "data": {
+                  "items": {
+                    "properties": {
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "is_own_message": {
+                        "type": "boolean"
+                      },
+                      "sender": {
+                        "properties": {
+                          "avatar_url": {
+                            "type": "string"
+                          },
+                          "first_name": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "integer"
+                          },
+                          "username": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "text": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Not a member of this group"
+          },
+          "404": {
+            "description": "Group not found"
+          }
+        },
+        "summary": "Get all messages in a group chat.",
+        "tags": [
+          "Messages"
+        ]
+      },
+      "post": {
+        "description": "Send a message to a group's chat. Email notifications are rate-limited to every 15 minutes.",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "message": {
+                  "example": "Happy holidays everyone!",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Message sent successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "is_own_message": {
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "sender": {
+                      "type": "object"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Message is required or empty"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Not a member of this group"
+          },
+          "404": {
+            "description": "Group not found"
+          }
+        },
+        "summary": "Send a message to a group chat.",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/groups/{group_id}/pairs": {
+      "post": {
+        "description": "Generate secret santa pairs for all group members. Only group admins can perform this action. There is a 1-day cooldown between pair generations.",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Pair creation initiated",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Only admins can create pairs"
+          },
+          "404": {
+            "description": "Group not found"
+          },
+          "409": {
+            "description": "Pair creation already in progress"
+          },
+          "429": {
+            "description": "Group is in cooldown period"
+          }
+        },
+        "summary": "Create secret santa pairs for a group (admin only).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/groups/{group_id}/reveal": {
+      "post": {
+        "description": "Enable or disable revealing of secret santa identities. Only group admins can perform this action.",
+        "parameters": [
+          {
+            "description": "Group ID",
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "reveal": {
+                  "description": "Whether to reveal pairs",
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "reveal"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reveal status updated",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reveal_latest_pairs": {
+                      "type": "boolean"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Missing reveal field"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Only admins can toggle reveal status"
+          },
+          "404": {
+            "description": "Group not found"
+          },
+          "429": {
+            "description": "Too many concurrent attempts"
+          }
+        },
+        "summary": "Toggle reveal status of secret santa pairs (admin only).",
+        "tags": [
+          "Groups"
+        ]
+      }
+    },
+    "/api/invites/{code}/accept": {
+      "post": {
+        "description": "Accept a group or admin invite using the invite code sent via email. GROUP-* codes add you as a regular member, ADMIN-* codes add you as a group admin.",
+        "parameters": [
+          {
+            "description": "Invite code (e.g., GROUP-ABC123 or ADMIN-XYZ789)",
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite accepted successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "group_id": {
+                      "type": "integer"
+                    },
+                    "is_admin": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Invalid invite code format"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Invite code was sent to a different user"
+          },
+          "404": {
+            "description": "Invalid or expired invite code"
+          },
+          "409": {
+            "description": "Already a member of this group"
+          }
+        },
+        "summary": "Accept a group or admin invite using the invite code.\n\nThe invite code is sent via email and determines the type of invite:\n- GROUP-* : Adds user to a group as a regular member\n- ADMIN-* : Adds user to a group as an admin",
+        "tags": [
+          "Invites"
+        ]
+      }
+    },
+    "/api/issues": {
+      "post": {
+        "description": "Submit a bug report or feedback about the application",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "description": {
+                  "example": "When I try to send a message, I get an error saying 'Something went wrong'. This happens every time I click send.",
+                  "maxLength": 500,
+                  "minLength": 10,
+                  "type": "string"
+                },
+                "title": {
+                  "example": "Cannot send messages to my santee",
+                  "maxLength": 150,
+                  "minLength": 10,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Issue reported successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "issue_id": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        },
+        "summary": "Report a bug or issue.",
+        "tags": [
+          "Issues"
+        ]
+      }
+    },
+    "/api/pairs/{channel_id}/messages": {
+      "get": {
+        "description": "Retrieve all messages in a santa/santee pair channel",
+        "parameters": [
+          {
+            "description": "Pair channel UUID",
+            "in": "path",
+            "name": "channel_id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of pair messages",
+            "schema": {
+              "properties": {
+                "data": {
+                  "items": {
+                    "properties": {
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "direction": {
+                        "enum": [
+                          "sent",
+                          "received"
+                        ],
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "text": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "You are not part of this pair"
+          },
+          "404": {
+            "description": "Pair channel not found"
+          }
+        },
+        "summary": "Get messages for a santa/santee pair channel.",
+        "tags": [
+          "Messages"
+        ]
+      },
+      "post": {
+        "description": "Send a message to your secret santa or santee. Messages from santa to santee are anonymous until reveal is enabled.",
+        "parameters": [
+          {
+            "description": "Pair channel UUID",
+            "in": "path",
+            "name": "channel_id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "message": {
+                  "example": "I got you something special!",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Message sent successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "direction": {
+                      "example": "sent",
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Message is required or empty"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "You are not part of this pair"
+          },
+          "404": {
+            "description": "Pair channel not found"
+          }
+        },
+        "summary": "Send a message in a santa/santee pair channel.",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/santa": {
+      "get": {
+        "description": "Get the current user's secret santa relationships across all groups",
+        "responses": {
+          "200": {
+            "description": "Santa relationships retrieved",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "santas": {
+                      "description": "Groups where someone is your secret santa",
+                      "items": {
+                        "properties": {
+                          "channel_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "group_id": {
+                            "type": "integer"
+                          },
+                          "group_name": {
+                            "type": "string"
+                          },
+                          "reveal_enabled": {
+                            "type": "boolean"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "santees": {
+                      "description": "People you are the secret santa for",
+                      "items": {
+                        "properties": {
+                          "channel_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "group_id": {
+                            "type": "integer"
+                          },
+                          "group_name": {
+                            "type": "string"
+                          },
+                          "santee": {
+                            "properties": {
+                              "avatar_url": {
+                                "type": "string"
+                              },
+                              "first_name": {
+                                "type": "string"
+                              },
+                              "last_name": {
+                                "type": "string"
+                              },
+                              "username": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "summary": "Get the current user's santa and santee relationships.\n\nReturns:\n    - santas: People who are buying gifts FOR the current user\n    - santees: People the current user is buying gifts for",
+        "tags": [
+          "Santa"
+        ]
+      }
+    },
+    "/api/santa/reveal": {
+      "get": {
+        "description": "Reveal who your secret santa is for a specific group. Includes decoy names for a fun reveal experience. Only works if the group admin has enabled reveals.",
+        "parameters": [
+          {
+            "description": "Name of the group to reveal secret santa for",
+            "in": "query",
+            "name": "group_name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Secret santa revealed",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "decoy_usernames": {
+                      "description": "Random member names for reveal animation",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "secret_santa": {
+                      "properties": {
+                        "avatar_url": {
+                          "type": "string"
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "secret_santa_username": {
+                      "example": "johndoe",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Missing group_name parameter"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Reveal is not enabled for this group"
+          },
+          "404": {
+            "description": "Group not found or no secret santa in this group"
+          }
+        },
+        "summary": "Reveal who the current user's secret santa is for a specific group.\n\nReturns the santa's username along with decoy usernames for a fun reveal experience.\n\nQuery parameters:\n    - group_name: The name of the group to reveal for",
+        "tags": [
+          "Santa"
+        ]
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "description": "Get the authenticated user's profile information including private fields",
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "address": {
+                      "example": "123 Main St",
+                      "type": "string"
+                    },
+                    "admin": {
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "avatar_url": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "email": {
+                      "example": "john@example.com",
+                      "type": "string"
+                    },
+                    "first_name": {
+                      "example": "John",
+                      "type": "string"
+                    },
+                    "hint": {
+                      "example": "I like video games",
+                      "type": "string"
+                    },
+                    "id": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "last_name": {
+                      "example": "Doe",
+                      "type": "string"
+                    },
+                    "username": {
+                      "example": "johndoe",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "summary": "Get the current user's profile.",
+        "tags": [
+          "Users"
+        ]
+      },
+      "put": {
+        "description": "Update the authenticated user's profile information",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "address": {
+                  "example": "456 Oak Avenue, City",
+                  "type": "string"
+                },
+                "first_name": {
+                  "example": "John",
+                  "maxLength": 150,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                "hint": {
+                  "example": "I love board games and puzzles",
+                  "type": "string"
+                },
+                "last_name": {
+                  "example": "Doe",
+                  "maxLength": 150,
+                  "minLength": 2,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "admin": {
+                      "type": "boolean"
+                    },
+                    "avatar_url": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "first_name": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "last_name": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "summary": "Update the current user's profile.",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/{username}": {
+      "get": {
+        "description": "Get another user's profile. Only accessible if the authenticated user is the secret santa for the requested user in at least one group.",
+        "parameters": [
+          {
+            "description": "Username of the user to retrieve",
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "schema": {
+              "properties": {
+                "data": {
+                  "properties": {
+                    "address": {
+                      "description": "Shipping address",
+                      "type": "string"
+                    },
+                    "avatar_url": {
+                      "type": "string"
+                    },
+                    "first_name": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "description": "Gift hints from the user",
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "last_name": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "success": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "You are not the secret santa for this user"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "summary": "Get another user's profile.\n\nOnly returns profile information if the current user is the secret santa\nof the requested user in at least one group.",
+        "tags": [
+          "Users"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": []
+    }
+  ],
+  "securityDefinitions": {
+    "Bearer": {
+      "description": "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+      "in": "header",
+      "name": "Authorization",
+      "type": "apiKey"
+    }
+  },
+  "swagger": "2.0",
+  "tags": [
+    {
+      "description": "Authentication endpoints",
+      "name": "Auth"
+    },
+    {
+      "description": "User profile endpoints",
+      "name": "Users"
+    },
+    {
+      "description": "Group management endpoints",
+      "name": "Groups"
+    },
+    {
+      "description": "Messaging endpoints",
+      "name": "Messages"
+    },
+    {
+      "description": "Secret Santa relationship endpoints",
+      "name": "Santa"
+    },
+    {
+      "description": "Invite management endpoints",
+      "name": "Invites"
+    },
+    {
+      "description": "Issue reporting endpoints",
+      "name": "Issues"
+    }
+  ]
+}

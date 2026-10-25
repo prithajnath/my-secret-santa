@@ -8,7 +8,7 @@ CREATE MATERIALIZED VIEW all_admin_view AS (
             FROM groups_and_users
             WHERE group_admin = 't'
         )   SELECT 
-                uuid_generate_v4() AS id,
+                gen_random_uuid() AS id,
                 user_id,
                 username,
                 group_id,
