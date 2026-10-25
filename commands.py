@@ -32,11 +32,13 @@ def register_commands(app, db):
         "--retry-unmatched", is_flag=True, help="Also retry addresses marked unmatched"
     )
     def geocode_addresses(group_id, dry_run, retry_unmatched):
-        """Geocode free-text user addresses with the US Census geocoder."""
+        """Geocode free-text user addresses (US Census, then Geoapify as fallback)."""
         import time
 
         import requests
         from sqlalchemy import func, or_
+
+        from lib.geocoding import geocode_address
 
         statuses = ["pending", "unmatched"] if retry_unmatched else ["pending"]
         query = User.query.filter(
@@ -54,55 +56,53 @@ def register_commands(app, db):
         click.echo(
             f"{len(users)} address(es) to geocode{' (dry run)' if dry_run else ''}"
         )
-        matched = unmatched = failed = 0
+        counts = {"census": 0, "geoapify": 0, "non_us": 0, "unmatched": 0, "failed": 0}
         for user in users:
             try:
-                response = requests.get(
-                    "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
-                    params={
-                        "address": user.address,
-                        "benchmark": "Public_AR_Current",
-                        "format": "json",
-                    },
-                    timeout=30,
-                )
-                response.raise_for_status()
-                matches = response.json()["result"]["addressMatches"]
+                result = geocode_address(user.address)
             except (requests.RequestException, KeyError, ValueError) as e:
-                failed += 1
-                click.echo(f"  {user.username}: lookup failed ({e.__class__.__name__}), left pending")
+                counts["failed"] += 1
+                click.echo(
+                    f"  {user.username}: lookup failed ({e.__class__.__name__}), left as is"
+                )
                 continue
 
-            if not matches:
-                unmatched += 1
+            if result is None:
+                counts["unmatched"] += 1
                 click.echo(f"  {user.username}: no match")
                 if not dry_run:
                     user.geocode_status = "unmatched"
                     user.save_to_db(db)
                 continue
 
-            match = matches[0]
-            components = match["addressComponents"]
-            city = components["city"].title()
-            click.echo(f"  {user.username}: matched {city}, {components['state']}")
-            matched += 1
+            counts[result.source] += 1
+            if result.source == "non_us":
+                click.echo(f"  {user.username}: outside the US ({result.country_code})")
+                if not dry_run:
+                    user.location = None
+                    user.geocode_status = "non_us"
+                    user.geocoded_at = datetime.now()
+                    user.save_to_db(db)
+                continue
+
+            click.echo(
+                f"  {user.username}: matched {result.city}, {result.state} via {result.source}"
+            )
             if not dry_run:
-                # Keep the user's own address text (Census drops apartment/unit numbers)
-                # and only fill in what the map and santa labels need
-                user.location = (
-                    f"SRID=4326;POINT({match['coordinates']['x']} {match['coordinates']['y']})"
-                )
-                user.city = city
-                user.state = components["state"]
-                user.zip = components["zip"]
-                user.geocode_status = "census"
+                # Keep the user's own address text (geocoders drop apartment/unit
+                # numbers) and only fill in what the map and santa labels need
+                user.location = f"SRID=4326;POINT({result.lon} {result.lat})"
+                user.city = result.city
+                user.state = result.state
+                user.zip = result.zip
+                user.geocode_status = result.source
                 user.geocoded_at = datetime.now()
                 user.save_to_db(db)
 
-            # Be polite to the free Census API
+            # Be polite to the free geocoding APIs
             time.sleep(0.2)
 
-        click.echo(f"matched {matched}, unmatched {unmatched}, failed {failed}")
+        click.echo(", ".join(f"{name} {count}" for name, count in counts.items()))
 
     @app.cli.command("seed")
     def seed_database():

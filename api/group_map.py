@@ -55,6 +55,7 @@ def _point(lat, lon, precision, city, state):
                         "type": "object",
                         "properties": {
                             "show_on_map": {"type": "boolean", "description": "Whether the viewer is shown on this group's map"},
+                            "has_non_us_members": {"type": "boolean", "description": "True if any member's address is outside the US (the map only supports US addresses)"},
                             "members": {
                                 "type": "array",
                                 "items": {
@@ -80,7 +81,7 @@ def _point(lat, lon, precision, city, state):
                                         },
                                         "location_unavailable_reason": {
                                             "type": "string",
-                                            "description": "Only set for the viewer's own entry: opted_out or no_verified_address",
+                                            "description": "Only set for the viewer's own entry: outside_us, opted_out or no_verified_address",
                                         },
                                     },
                                 },
@@ -170,7 +171,9 @@ def api_get_group_map(group_id):
 
         location = None
         reason = None
-        if not show_on_map:
+        if user.geocode_status == "non_us":
+            reason = "outside_us"
+        elif not show_on_map:
             reason = "opted_out"
         elif not verified:
             reason = "no_verified_address"
@@ -195,8 +198,16 @@ def api_get_group_map(group_id):
             member["location_unavailable_reason"] = reason
         members.append(member)
 
+    # Whether anyone's address is outside the US (opted in or not). A boolean only, so
+    # it doesn't single anyone out in small groups
+    has_non_us_members = any(user.geocode_status == "non_us" for user, *_ in rows)
+
     return api_response(
-        {"show_on_map": viewer_membership.show_on_map, "members": members}
+        {
+            "show_on_map": viewer_membership.show_on_map,
+            "has_non_us_members": has_non_us_members,
+            "members": members,
+        }
     )
 
 

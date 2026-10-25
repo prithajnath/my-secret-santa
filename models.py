@@ -69,7 +69,8 @@ class User(dbMixin, UserMixin, db.Model):
         Geography(geometry_type="POINT", srid=4326, spatial_index=False),
         nullable=True,
     )
-    # How `location` was obtained: autocomplete, census, geoapify, unmatched or pending
+    # How `location` was obtained: autocomplete, census, geoapify; or unmatched, non_us
+    # (address outside the US, no location kept) or pending
     geocode_status = db.Column(db.String(20), nullable=True)
     geocoded_at = db.Column(db.DateTime, nullable=True)
     password = db.Column(db.String(100), nullable=False)
