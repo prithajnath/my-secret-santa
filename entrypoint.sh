@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 export FLASK_APP=app.py
-flask db migrate
 flask db upgrade
 
 CONCURRENCY=$(expr 2 \* $(nproc) + 1)

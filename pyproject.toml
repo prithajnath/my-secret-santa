@@ -28,6 +28,7 @@ dependencies = [
     "faker>=40.1.2",
     "pytest>=9.0.2",
     "gunicorn>=26.2.0",
+    "geoalchemy2>=0.20.0",
 ]
 
 [dependency-groups]

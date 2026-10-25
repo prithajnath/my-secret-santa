@@ -503,6 +503,10 @@ frozenlist==1.8.0 \
     # via
     #   aiohttp
     #   aiosignal
+geoalchemy2==0.20.0 \
+    --hash=sha256:1489a1d106519542a79c97cd0b4c537d80462c353610ebc2429cf2c43daac717 \
+    --hash=sha256:450f427f4bc3cf2d5ddee0af3763aed0f3eea2384e7c9a99798d8f1508279322
+    # via my-secret-santa
 gevent==25.9.1 \
     --hash=sha256:03c74fec58eda4b4edc043311fca8ba4f8744ad1632eb0a41d5ec25413581975 \
     --hash=sha256:0adb937f13e5fb90cca2edf66d8d7e99d62a299687400ce2edee3f3504009356 \
@@ -883,6 +887,7 @@ packaging==25.0 \
     --hash=sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f
     # via
     #   flasgger
+    #   geoalchemy2
     #   kombu
     #   pytest
 passlib==1.7.4 \
@@ -1460,6 +1465,7 @@ sqlalchemy==2.0.45 \
     # via
     #   alembic
     #   flask-sqlalchemy
+    #   geoalchemy2
     #   marshmallow-sqlalchemy
 tomli==2.4.0 ; python_full_version < '3.11' \
     --hash=sha256:0408e3de5ec77cc7f81960c362543cbbd91ef883e3138e81b729fc3eea5b9729 \

@@ -145,6 +145,7 @@ swagger_template = {
         {"name": "Santa", "description": "Secret Santa relationship endpoints"},
         {"name": "Invites", "description": "Invite management endpoints"},
         {"name": "Issues", "description": "Issue reporting endpoints"},
+        {"name": "Geo", "description": "Address autocomplete endpoints"},
     ],
 }
 

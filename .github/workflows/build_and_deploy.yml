@@ -17,6 +17,7 @@ jobs:
       SENDGRID_RESET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_RESET_PASSWORD_TEMPLATE_ID }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GEOAPIFY_API_KEY: ${{ secrets.GEOAPIFY_API_KEY }}
       SENTRY_API_KEY: ${{ secrets.SENTRY_API_KEY }}
     runs-on: [digitalocean]
     steps:
@@ -35,6 +36,7 @@ jobs:
       SENDGRID_RESET_PASSWORD_TEMPLATE_ID: ${{ secrets.SENDGRID_RESET_PASSWORD_TEMPLATE_ID }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GEOAPIFY_API_KEY: ${{ secrets.GEOAPIFY_API_KEY }}
       SENTRY_API_KEY: ${{ secrets.SENTRY_API_KEY }}
     needs: build_container_image
     runs-on: [digitalocean]

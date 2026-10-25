@@ -1,0 +1,8 @@
+# Postgres 13 + PostGIS on the same Debian base as the official postgres:13 image.
+# The postgis/postgis:13-* images use an older Debian (different glibc collations), which
+# would invalidate text indexes on the existing data directory
+FROM postgres:13
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends postgresql-13-postgis-3 \
+	&& rm -rf /var/lib/apt/lists/*

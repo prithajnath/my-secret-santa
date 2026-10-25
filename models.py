@@ -2,6 +2,7 @@ from enum import Enum
 from uuid import uuid4
 
 from flask_login import UserMixin
+from geoalchemy2 import Geography
 from flask_sqlalchemy import SQLAlchemy
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy import (
@@ -33,6 +34,10 @@ class GroupsAndUsersAssociation(dbMixin, db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), primary_key=True)
     group_admin = db.Column(db.Boolean, default=False)
     participating = db.Column(db.Boolean, default=True)
+    # Opt-in: show this member's approximate location on the group map
+    show_on_map = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
     group = db.relationship("Group", backref="_users")
     user = db.relationship("User", backref="_groups")
 
@@ -44,12 +49,29 @@ class GroupsAndUsersAssociation(dbMixin, db.Model):
 
 class User(dbMixin, UserMixin, db.Model):
     __tablename__ = "users"
+    __table_args__ = (
+        db.Index("idx_users_location", "location", postgresql_using="gist"),
+    )
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     first_name = db.Column(db.String(20), unique=False, nullable=True)
     last_name = db.Column(db.String(20), unique=False, nullable=True)
     hint = db.Column(TEXT, unique=False, nullable=True)
     address = db.Column(db.String(200), unique=False, nullable=True)
+    # Structured US address; `address` above stays the display string
+    address_line1 = db.Column(db.String(200), nullable=True)
+    address_line2 = db.Column(db.String(200), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    state = db.Column(db.String(2), nullable=True)
+    zip = db.Column(db.String(10), nullable=True)
+    # Home location. Only used server-side for distance queries, never returned by the API
+    location = db.Column(
+        Geography(geometry_type="POINT", srid=4326, spatial_index=False),
+        nullable=True,
+    )
+    # How `location` was obtained: autocomplete, census, geoapify, unmatched or pending
+    geocode_status = db.Column(db.String(20), nullable=True)
+    geocoded_at = db.Column(db.DateTime, nullable=True)
     password = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     admin = db.Column(db.Boolean, unique=False, default=False)
@@ -93,6 +115,33 @@ class User(dbMixin, UserMixin, db.Model):
 
     def __str__(self):
         return self.email
+
+    __repr__ = __str__
+
+
+class Place(db.Model):
+    """
+    US populated place (GeoNames, see sql/data/README.md). Group maps show members at
+    their nearest place instead of their address
+    """
+
+    __tablename__ = "places"
+    __table_args__ = (
+        db.Index("idx_places_location", "location", postgresql_using="gist"),
+    )
+
+    # GeoNames geonameid
+    id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    name = db.Column(db.String(200), nullable=False)
+    state = db.Column(db.String(2), nullable=False)
+    population = db.Column(db.Integer, nullable=False)
+    location = db.Column(
+        Geography(geometry_type="POINT", srid=4326, spatial_index=False),
+        nullable=False,
+    )
+
+    def __str__(self):
+        return f"{self.name}, {self.state}"
 
     __repr__ = __str__
 

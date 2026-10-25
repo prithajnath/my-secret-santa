@@ -24,6 +24,15 @@ config.set_main_option(
 )
 target_metadata = current_app.extensions["migrate"].db.metadata
 
+# Tables owned by Postgres extensions (PostGIS). Autogenerate must never try to drop them
+EXTENSION_TABLES = {"spatial_ref_sys"}
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name in EXTENSION_TABLES:
+        return False
+    return True
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -78,6 +87,7 @@ def run_migrations_online():
         connection=connection,
         target_metadata=target_metadata,
         process_revision_directives=process_revision_directives,
+        include_object=include_object,
         **current_app.extensions["migrate"].configure_args
     )
 

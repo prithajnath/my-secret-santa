@@ -2,13 +2,92 @@
 User profile API endpoints.
 """
 
+import re
+from datetime import datetime
+
 from flasgger import swag_from
 from flask import request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from api import api_bp
-from api.utils import api_error, api_response, serialize_user
+from api.utils import (
+    api_error,
+    api_response,
+    serialize_address_components,
+    serialize_user,
+)
 from models import User, all_latest_pairs_view, db
+
+US_STATES = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID",
+    "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO",
+    "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA",
+    "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+}
+ZIP_RE = re.compile(r"^\d{5}(-\d{4})?$")
+
+
+def apply_address_components(user, components):
+    """
+    Validate and store a structured US address on the user.
+
+    Returns an error message, or None on success. Passing None clears the address.
+    """
+    if components is None:
+        user.address = None
+        user.address_line1 = user.address_line2 = user.city = user.state = user.zip = None
+        user.location = None
+        user.geocode_status = None
+        user.geocoded_at = None
+        return None
+
+    if not isinstance(components, dict):
+        return "address_components must be an object"
+
+    line1 = (components.get("address_line1") or "").strip()
+    line2 = (components.get("address_line2") or "").strip() or None
+    city = (components.get("city") or "").strip()
+    state = (components.get("state") or "").strip().upper()
+    zip_code = (components.get("zip") or "").strip()
+
+    if not line1 or len(line1) > 200:
+        return "address_line1 is required (max 200 characters)"
+    if line2 and len(line2) > 200:
+        return "address_line2 must be at most 200 characters"
+    if not city or len(city) > 100:
+        return "city is required (max 100 characters)"
+    if state not in US_STATES:
+        return "state must be a 2-letter US state code"
+    if not ZIP_RE.match(zip_code):
+        return "zip must be a 5-digit US ZIP code (optionally ZIP+4)"
+
+    lat, lon = components.get("lat"), components.get("lon")
+    has_coordinates = lat is not None and lon is not None
+    if has_coordinates:
+        try:
+            lat, lon = float(lat), float(lon)
+        except (TypeError, ValueError):
+            return "lat and lon must be numbers"
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return "lat/lon out of range"
+
+    display = ", ".join(part for part in (line1, line2, city) if part) + f", {state} {zip_code}"
+    if len(display) > 200:
+        return "Address is too long"
+
+    user.address = display
+    user.address_line1, user.address_line2 = line1, line2
+    user.city, user.state, user.zip = city, state, zip_code
+    if has_coordinates:
+        # Coordinates come from the autocomplete suggestion the user picked
+        user.location = f"SRID=4326;POINT({lon} {lat})"
+        user.geocode_status = "autocomplete"
+        user.geocoded_at = datetime.now()
+    else:
+        user.location = None
+        user.geocode_status = "pending"
+        user.geocoded_at = None
+    return None
 
 
 @api_bp.route("/users/me", methods=["GET"])
@@ -72,7 +151,20 @@ def api_get_current_user():
                 "type": "object",
                 "properties": {
                     "hint": {"type": "string", "example": "I love board games and puzzles"},
-                    "address": {"type": "string", "example": "456 Oak Avenue, City"},
+                    "address": {"type": "string", "example": "456 Oak Avenue, City", "description": "Legacy free-text address. Ignored when address_components is sent"},
+                    "address_components": {
+                        "type": "object",
+                        "description": "Structured US address, typically a suggestion from GET /geo/autocomplete. Send null to clear",
+                        "properties": {
+                            "address_line1": {"type": "string", "example": "1554 Midway Parkway"},
+                            "address_line2": {"type": "string", "example": "Apt 358"},
+                            "city": {"type": "string", "example": "St Paul"},
+                            "state": {"type": "string", "example": "MN"},
+                            "zip": {"type": "string", "example": "55108"},
+                            "lat": {"type": "number", "example": 44.98},
+                            "lon": {"type": "number", "example": -93.17},
+                        },
+                    },
                     "first_name": {"type": "string", "minLength": 2, "maxLength": 150, "example": "John"},
                     "last_name": {"type": "string", "minLength": 2, "maxLength": 150, "example": "Doe"},
                 },
@@ -126,8 +218,19 @@ def api_update_current_user():
     if "hint" in data:
         user.hint = data["hint"]
 
-    if "address" in data:
-        user.address = data["address"]
+    if "address_components" in data:
+        error = apply_address_components(user, data["address_components"])
+        if error:
+            return api_error(error, 400)
+    elif "address" in data:
+        # Legacy free-text address: drop the structured fields and queue it for geocoding
+        address = (data["address"] or "").strip()
+        if len(address) > 200:
+            return api_error("Address must be at most 200 characters", 400)
+        apply_address_components(user, None)
+        if address:
+            user.address = address
+            user.geocode_status = "pending"
 
     if "first_name" in data:
         if len(data["first_name"]) < 2 or len(data["first_name"]) > 150:
@@ -227,5 +330,6 @@ def api_get_user(username):
             "avatar_url": target_user.avatar_url,
             "hint": target_user.hint,
             "address": target_user.address,
+            "address_components": serialize_address_components(target_user),
         }
     )

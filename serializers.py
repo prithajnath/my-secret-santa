@@ -9,6 +9,8 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         model = User
         include_relationships = True
         load_instance = True
+        # Geography has no marshmallow field, and home coordinates must never be serialized
+        exclude = ("location",)
 
 
 class GroupSchema(ma.SQLAlchemyAutoSchema):

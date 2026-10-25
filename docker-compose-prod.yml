@@ -29,6 +29,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://secret-santa-redis
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GEOAPIFY_API_KEY=${GEOAPIFY_API_KEY}
       - SENTRY_API_KEY=${SENTRY_API_KEY}
       - PYTHONPATH=.
     entrypoint: "./entrypoint.sh"
@@ -62,7 +63,10 @@ services:
   secret-santa-postgres:
     volumes:
       - /home/ubuntu/.local/volumes/my-secret-santa:/var/lib/postgresql/data
-    image: postgres:13
+    image: iamprithaj/secret-santa-postgis
+    build:
+      context: .
+      dockerfile: Dockerfile-postgres
     restart: always
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust

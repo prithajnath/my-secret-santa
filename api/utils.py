@@ -40,6 +40,23 @@ def api_error(message, status_code=400, errors=None):
     return jsonify(response), status_code
 
 
+# geocode_status values meaning `location` holds a real coordinate
+VERIFIED_GEOCODE_STATUSES = ("autocomplete", "census", "geoapify")
+
+
+def serialize_address_components(user):
+    """Structured address fields. Coordinates are deliberately never included."""
+    if not user.address_line1:
+        return None
+    return {
+        "address_line1": user.address_line1,
+        "address_line2": user.address_line2,
+        "city": user.city,
+        "state": user.state,
+        "zip": user.zip,
+    }
+
+
 def serialize_user(user, include_private=False):
     """
     Serialize a User object to a dictionary.
@@ -63,6 +80,8 @@ def serialize_user(user, include_private=False):
         data["email"] = user.email
         data["hint"] = user.hint
         data["address"] = user.address
+        data["address_components"] = serialize_address_components(user)
+        data["address_verified"] = user.geocode_status in VERIFIED_GEOCODE_STATUSES
         data["admin"] = user.admin
         data["created_at"] = user.created_at.isoformat() if user.created_at else None
 
