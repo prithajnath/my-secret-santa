@@ -151,10 +151,21 @@ swagger_template = {
 swagger = Swagger(app, config=swagger_config, template=swagger_template)
 
 
+# Request headers that carry credentials and must never be written to logs
+SENSITIVE_HEADERS = {"authorization", "cookie"}
+
+
+def _loggable_headers():
+    return {
+        key: "<redacted>" if key.lower() in SENSITIVE_HEADERS else value
+        for key, value in request.headers.items()
+    }
+
+
 # JWT error handlers
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
-    app.logger.error(f"JWT EXPIRED - Headers: {dict(request.headers)}")
+    app.logger.error(f"JWT EXPIRED - Headers: {_loggable_headers()}")
     app.logger.error(f"JWT EXPIRED - Payload: {jwt_payload}")
     return (
         jsonify({"success": False, "error": {"message": "Token has expired"}}),
@@ -165,7 +176,7 @@ def expired_token_callback(jwt_header, jwt_payload):
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
     app.logger.error(f"JWT INVALID - Error: {error}")
-    app.logger.error(f"JWT INVALID - Headers: {dict(request.headers)}")
+    app.logger.error(f"JWT INVALID - Headers: {_loggable_headers()}")
     return (
         jsonify({"success": False, "error": {"message": "Invalid token"}}),
         401,
@@ -175,7 +186,7 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     app.logger.error(f"JWT MISSING - Error: {error}")
-    app.logger.error(f"JWT MISSING - Headers: {dict(request.headers)}")
+    app.logger.error(f"JWT MISSING - Headers: {_loggable_headers()}")
     return (
         jsonify(
             {"success": False, "error": {"message": "Authorization header is missing"}}

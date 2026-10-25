@@ -54,75 +54,88 @@ if os.getenv("ENV") == "production":
 
 
 def send_email(to: str, subject: str, template_name: str, payload: Dict):
-    if mailgun_api_key := os.getenv("MAILGUN_API_KEY"):
-        domain_name = "www.mysecretsanta.io"
+    """
+    Send an email through Mailgun.
 
-        # 1. Send the email
-        response = requests.post(
-            f"https://api.mailgun.net/v3/{domain_name}/messages",
+    Returns None when Mailgun accepted (or delivered) the message, otherwise a short
+    error string, so callers can record it on their Task row
+    """
+    mailgun_api_key = os.getenv("MAILGUN_API_KEY")
+    if not mailgun_api_key:
+        message = f"MAILGUN_API_KEY is not set, not sending '{template_name}' email to {to}"
+        if os.getenv("ENV") == "production":
+            logger.warning(message)
+            return message
+        logger.debug(message)
+        return None
+
+    domain_name = "www.mysecretsanta.io"
+
+    # 1. Send the email
+    response = requests.post(
+        f"https://api.mailgun.net/v3/{domain_name}/messages",
+        auth=("api", mailgun_api_key),
+        data={
+            "from": f"MySecretSanta <no-reply@{domain_name}>",
+            "to": [to],
+            "template": template_name,
+            "h:X-Mailgun-Variables": json.dumps(payload),
+            "subject": subject,
+        },
+    )
+
+    logger.debug(f"Send Status: {response.status_code}")
+    logger.debug(response.content)
+
+    if response.status_code != 200:
+        error = f"Mailgun rejected '{template_name}' email to {to}: HTTP {response.status_code} {response.text[:300]}"
+        logger.warning(error)
+        return error
+
+    try:
+        # 2. Extract and clean the Message ID (remove < and >)
+        # Response format: {"id": "<2025...@domain>", "message": "..."}
+        raw_id = response.json().get("id", "")
+    except json.JSONDecodeError:
+        logger.error("Failed to decode JSON response from Mailgun.")
+        return None
+
+    clean_message_id = raw_id.strip("<>")
+    logger.debug(f"Tracking status for message_id: {clean_message_id}")
+
+    # 3. Poll for status (5 attempts)
+    for attempt in range(1, 6):
+        sleep(2)  # Wait 2 seconds between tries to allow propagation
+
+        events_response = requests.get(
+            f"https://api.mailgun.net/v3/{domain_name}/events",
             auth=("api", mailgun_api_key),
-            data={
-                "from": f"MySecretSanta <no-reply@{domain_name}>",
-                "to": [to],
-                "template": template_name,
-                "h:X-Mailgun-Variables": json.dumps(payload),
-                "subject": subject,
+            params={
+                "message-id": clean_message_id,
+                "limit": 1,  # We only need the latest event
             },
         )
 
-        logger.debug(f"Send Status: {response.status_code}")
-        logger.debug(response.content)
+        if events_response.status_code == 200:
+            events = events_response.json().get("items", [])
+            if events:
+                # The most recent event is usually first
+                status = events[0].get("event")
+                logger.debug(f"Attempt {attempt}: Status is '{status}'")
 
-        if response.status_code == 200:
-            try:
-                # 2. Extract and clean the Message ID (remove < and >)
-                # Response format: {"id": "<2025...@domain>", "message": "..."}
-                raw_id = response.json().get("id", "")
-                clean_message_id = raw_id.strip("<>")
+                # 'accepted' = queued by Mailgun
+                # 'delivered' = accepted by recipient server
+                # 'failed' / 'rejected' = permanent failure
+                if status in ["failed", "rejected"]:
+                    error = f"Mailgun {status} '{template_name}' email to {to}"
+                    logger.warning(error)
+                    return error
+                return None
+        else:
+            logger.error(f"Failed to query events: {events_response.status_code}")
 
-                logger.debug(f"Tracking status for message_id: {clean_message_id}")
-
-                # 3. Poll for status (5 attempts)
-                for attempt in range(1, 6):
-                    sleep(2)  # Wait 2 seconds between tries to allow propagation
-
-                    events_response = requests.get(
-                        f"https://api.mailgun.net/v3/{domain_name}/events",
-                        auth=("api", mailgun_api_key),
-                        params={
-                            "message-id": clean_message_id,
-                            "limit": 1,  # We only need the latest event
-                        },
-                    )
-
-                    if events_response.status_code == 200:
-                        events = events_response.json().get("items", [])
-                        if events:
-                            # The most recent event is usually first
-                            latest_event = events[0]
-                            status = latest_event.get("event")
-
-                            logger.debug(f"Attempt {attempt}: Status is '{status}'")
-
-                            # 'accepted' = queued by Mailgun
-                            # 'delivered' = accepted by recipient server
-                            # 'failed' / 'rejected' = permanent failure
-                            if status in ["failed", "rejected"]:
-                                logger.error(f"{status}: sending email to {to}")
-                            return status
-                    else:
-                        logger.error(
-                            f"Failed to query events: {events_response.status_code}"
-                        )
-
-                logger.debug(
-                    "Final status check: Status unknown or pending after 5 attempts."
-                )
-
-            except json.JSONDecodeError:
-                logger.error("Failed to decode JSON response from Mailgun.")
-    else:
-        logger.debug(f"pretending to send an email to {to}")
+    logger.debug("Final status check: Status unknown or pending after 5 attempts.")
+    return None
 
 
 # This is just a wrapper class for the retry decorator. Whenever we get an instance of this class it means something went wrong
@@ -452,7 +465,7 @@ def _make_pairs_graph_based(pipe={}):
 def _send_secret_santa_email(giver_email, giver_first_name, group_id):
     with app.app_context():
         group = Group.query.filter_by(id=group_id).first()
-        send_email(
+        return send_email(
             to=[giver_email],
             subject="You are someone's secret santa!!!",
             template_name="secret_santa",
@@ -467,7 +480,7 @@ def _send_secret_santa_email(giver_email, giver_first_name, group_id):
 @network_exception_retry
 def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code):
     with app.app_context():
-        send_email(
+        return send_email(
             to=[to_email],
             subject="You've been invited to a secret santa draw!!",
             template_name="secret_santa_invite",
@@ -482,7 +495,7 @@ def _invite_user_to_sign_up(to_email, admin_first_name, group_name, invite_code)
 @network_exception_retry
 def _invite_user_to_group(to_email, admin_first_name, group_name, invite_code):
     with app.app_context():
-        send_email(
+        return send_email(
             to=[to_email],
             subject="You've been invited to a secret santa draw!!",
             template_name="secret_santa_invite",
@@ -505,7 +518,7 @@ def _send_message_notification(
         else:
             intro = f"Hey @{receiver_username}, you have a new message from your secret santa ({group_name})"
         if os.getenv("ENV") == "production":
-            send_email(
+            return send_email(
                 to=[receiver_email],
                 subject=subject,
                 template_name="secret_santa_message_notification",
@@ -528,7 +541,7 @@ def _send_group_chat_notification(
         subject = "You have christmas mail from your group!"
         intro = f"Hey @{receiver_username}, @{sender_username} sent a new message in the group chat! ({group_name})"
         if os.getenv("ENV") == "production":
-            send_email(
+            return send_email(
                 to=[receiver_email],
                 subject=subject,
                 template_name="secret_santa_message_notification",
@@ -557,7 +570,7 @@ def _reset_user_password(email, user):
         user.set_password(new_password)
         user.save_to_db(db)
         if os.getenv("ENV") == "production":
-            send_email(
+            return send_email(
                 to=[email],
                 subject="Forgot your password?",
                 template_name="password_reset",
@@ -744,7 +757,8 @@ def send_secret_santa_email(email, group_id):
         result = _send_secret_santa_email(user.email, user.first_name, group_id)
 
         task.status = "finished"
-        task.error = str(result)
+        if result:
+            task.error = str(result)
         task.finished_at = datetime.now()
         task.save_to_db(db)
 
@@ -771,7 +785,8 @@ def reset_user_password(email):
         result = _reset_user_password(email, user)
 
         task.status = "finished"
-        task.error = str(result)
+        if result:
+            task.error = str(result)
         task.finished_at = datetime.now()
         task.save_to_db(db)
 
@@ -801,7 +816,8 @@ def invite_user_to_group(to_email, admin_first_name, group_name):
         )
 
         task.status = "finished"
-        task.error = str(result)
+        if result:
+            task.error = str(result)
         task.finished_at = datetime.now()
         task.save_to_db(db)
 
@@ -831,7 +847,8 @@ def invite_user_to_sign_up(to_email, admin_first_name, group_name):
         )
 
         task.status = "finished"
-        task.error = str(result)
+        if result:
+            task.error = str(result)
         task.finished_at = datetime.now()
         task.save_to_db(db)
 
