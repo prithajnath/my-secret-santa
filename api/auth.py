@@ -210,7 +210,7 @@ def api_login():
     if not data:
         return api_error("Request body is required", 400)
 
-    if "username" not in data or "password" not in data:
+    if not data.get("username") or not data.get("password"):
         return api_error("Username and password are required", 400)
 
     user = User.query.filter_by(username=data["username"]).first()
@@ -760,7 +760,6 @@ def api_google_oauth_callback():
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password="",  # No password for OAuth users
         )
         user.save_to_db(db)
 

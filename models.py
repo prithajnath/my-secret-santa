@@ -1,3 +1,4 @@
+import secrets
 from enum import Enum
 from uuid import uuid4
 
@@ -90,7 +91,7 @@ class User(dbMixin, UserMixin, db.Model):
         first_name="first_name",
         last_name="last_name",
         email="test@test.io",
-        password="test",
+        password=None,
         hint="somehint",
         address="whereilive",
         admin=False,
@@ -102,7 +103,11 @@ class User(dbMixin, UserMixin, db.Model):
         self.admin = admin
         self.address = address
         self.hint = hint
-        self.password = pbkdf2_sha256.hash(password)
+        # No password given (e.g. a Google sign-up): store one nobody knows, so the
+        # account can't be logged into with a password until it's reset
+        self.password = pbkdf2_sha256.hash(
+            password if password else secrets.token_urlsafe(32)
+        )
 
     def verify_hash(self, password, hash):
         return pbkdf2_sha256.verify(password, hash)
