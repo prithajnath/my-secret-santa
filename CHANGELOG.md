@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
   - Builds a graph where each user is a node and edges have random weights
   - Uses SQLAlchemy Core to query last year's pairs (most recent pairs for the group) to identify illegal edges
   - Removes illegal edges to ensure users don't get paired with the same person from last year
-  - Traverses the graph starting from a random node using a greedy approach (selecting highest-weight edges) to create a cycle
+  - Searches for a cycle through every user, starting from a random node, following the highest-weight edges first and backtracking out of dead ends
   - Ensures randomness while avoiding previous year's pairings
 
 ### Changed

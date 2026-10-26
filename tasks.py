@@ -318,6 +318,65 @@ def _make_pairs(pipe={}):
         return {**pipe, "final_pairs": final_pairs}
 
 
+# Cap on backtracking steps per search, so a pathological graph can't stall a draw.
+# Any group of 3+ that drew together last time has a valid cycle (last year's in
+# reverse, at least), and the search finds one almost immediately
+GIFT_CYCLE_SEARCH_LIMIT = 100000
+
+
+def _build_gift_graph(user_ids, illegal_edges):
+    """Graph of user_id -> [(receiver_id, random weight)], leaving out illegal edges."""
+    graph = defaultdict(list)
+    for giver_id in user_ids:
+        for receiver_id in user_ids:
+            if giver_id != receiver_id and (giver_id, receiver_id) not in illegal_edges:
+                graph[giver_id].append((receiver_id, random.random()))
+    return graph
+
+
+def _find_gift_cycle(graph, user_ids):
+    """
+    Find a cycle through every user (each gives to the next, the last gives to the
+    first) using only the graph's edges. Depth-first from a random node, following the
+    highest-weight edges first and backtracking out of dead ends. Returns the order, or
+    None if there's no such cycle (or the search hit its step limit).
+    """
+    start_user_id = random.choice(user_ids)
+    neighbors = {
+        user_id: [
+            receiver_id
+            for receiver_id, _ in sorted(
+                graph[user_id], key=lambda edge: edge[1], reverse=True
+            )
+        ]
+        for user_id in user_ids
+    }
+    path = [start_user_id]
+    visited = {start_user_id}
+    steps = 0
+
+    def extend():
+        nonlocal steps
+        steps += 1
+        if steps > GIFT_CYCLE_SEARCH_LIMIT:
+            return False
+        current_user_id = path[-1]
+        if len(path) == len(user_ids):
+            # Everyone is on the path; it only counts if the last can give to the first
+            return start_user_id in neighbors[current_user_id]
+        for receiver_id in neighbors[current_user_id]:
+            if receiver_id not in visited:
+                path.append(receiver_id)
+                visited.add(receiver_id)
+                if extend():
+                    return True
+                path.pop()
+                visited.remove(receiver_id)
+        return False
+
+    return path if extend() else None
+
+
 @network_exception_retry
 def _make_pairs_graph_based(pipe={}):
     """
@@ -328,7 +387,11 @@ def _make_pairs_graph_based(pipe={}):
     2. Each edge to another user has a random weight
     3. Query last year's pairs (most recent pairs for this group) to get illegal edges
     4. Remove illegal edges from the graph
-    5. Start from a random node and traverse the graph to create pairs
+    5. Search the graph for a cycle through every user, starting from a random node and
+       following the highest-weight edges first, backtracking out of dead ends
+
+    If no cycle avoids last year's pairs (always the case for a group of 2 after its
+    first draw), all edges are allowed.
     """
     group_id = pipe["group_id"]
     with app.app_context():
@@ -372,69 +435,18 @@ def _make_pairs_graph_based(pipe={}):
 
         logger.debug(f"Found {len(illegal_edges)} illegal edges from last year's pairs")
 
-        # Create graph: user_id -> list of (target_user_id, weight) tuples
-        graph = defaultdict(list)
         user_ids = [user.id for user in participating_users]
         user_id_to_user = {user.id: user for user in participating_users}
 
-        # Build graph with random weights, excluding illegal edges
-        for giver_id in user_ids:
-            for receiver_id in user_ids:
-                if giver_id != receiver_id:
-                    # Skip if this edge is illegal (last year's pair)
-                    if (giver_id, receiver_id) not in illegal_edges:
-                        # Assign random weight to this edge
-                        weight = random.random()
-                        graph[giver_id].append((receiver_id, weight))
-
-        # Verify we have enough valid edges for all users
-        for user_id in user_ids:
-            if not graph[user_id]:
-                logger.warning(
-                    f"User {user_id} has no valid edges after removing illegal ones. "
-                    "Falling back to allowing all edges."
-                )
-                # Fallback: allow all edges if graph is too constrained
-                graph[user_id] = [
-                    (receiver_id, random.random())
-                    for receiver_id in user_ids
-                    if receiver_id != user_id
-                ]
-
-        # Traverse graph to create pairs
-        # Start from a random node
-        start_user_id = random.choice(user_ids)
-        visited = set()
-        pairs_order = []
-        current_user_id = start_user_id
-
-        # Greedy traversal: at each step, pick the edge with highest weight to an unvisited node
-        while len(visited) < len(user_ids):
-            visited.add(current_user_id)
-            pairs_order.append(current_user_id)
-
-            if len(visited) == len(user_ids):
-                # All nodes visited, complete the cycle
-                break
-
-            # Find the best next node (highest weight to an unvisited node)
-            available_edges = [
-                (receiver_id, weight)
-                for receiver_id, weight in graph[current_user_id]
-                if receiver_id not in visited
-            ]
-
-            if not available_edges:
-                # No valid edges, pick any unvisited node
-                unvisited = [uid for uid in user_ids if uid not in visited]
-                if unvisited:
-                    current_user_id = random.choice(unvisited)
-                else:
-                    break
-            else:
-                # Sort by weight (descending) and pick the best one
-                available_edges.sort(key=lambda x: x[1], reverse=True)
-                current_user_id = available_edges[0][0]
+        pairs_order = _find_gift_cycle(
+            _build_gift_graph(user_ids, illegal_edges), user_ids
+        )
+        if pairs_order is None:
+            logger.warning(
+                f"No cycle in group {group_id} avoids last year's pairs; "
+                "allowing all edges"
+            )
+            pairs_order = _find_gift_cycle(_build_gift_graph(user_ids, set()), user_ids)
 
         # Create pairs: each user gives to the next user in the cycle
         final_pairs = []
