@@ -25,6 +25,24 @@ def register_commands(app, db):
         new_superuser.save_to_db(db)
         click.echo(f"superuser {username} : {email} created successfully")
 
+    @app.cli.command("set-password")
+    @click.argument("username")
+    def set_password(username):
+        """Set a user's password, e.g. so an admin can log into /admin."""
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            raise click.ClickException(f"No user named {username}")
+
+        password = getpass(f"New password for {username} : ")
+        if len(password) < 8:
+            raise click.ClickException("Password must be at least 8 characters")
+        if getpass("Repeat it : ") != password:
+            raise click.ClickException("Passwords don't match")
+
+        user.set_password(password)
+        user.save_to_db(db)
+        click.echo(f"Password set for {username}{' (admin)' if user.admin else ''}")
+
     @app.cli.command("geocode-addresses")
     @click.option("--group-id", type=int, help="Only geocode members of this group")
     @click.option("--dry-run", is_flag=True, help="Report matches without saving")

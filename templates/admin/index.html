@@ -1,0 +1,11 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mt-4">
+  <p class="mb-0">Logged in as <strong>{{ current_user.username }}</strong></p>
+  <form method="POST" action="{{ url_for('.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">Log out</button>
+  </form>
+</div>
+{% endblock %}

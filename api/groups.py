@@ -20,7 +20,6 @@ from models import (
     PairCreationStatus,
     Task,
     User,
-    all_admin_materialized_view,
     db,
 )
 from sql import AdvisoryLock
@@ -235,9 +234,6 @@ def api_create_group():
         group=new_group, user=user, group_admin=True
     )
     new_group_assoc.save_to_db(db)
-
-    # Refresh materialized view
-    # all_admin_materialized_view.refresh()
 
     return api_response(serialize_group(new_group, include_members=True), 201)
 

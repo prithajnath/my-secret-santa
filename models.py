@@ -13,12 +13,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from mixins import dbMixin
-from sql.materialized_views import AllAdminView, AllLatestPairsView
+from sql.materialized_views import AllLatestPairsView
 
 db = SQLAlchemy()
 
 
-all_admin_materialized_view = AllAdminView(db)
 all_latest_pairs_view = AllLatestPairsView(db)
 
 
@@ -186,8 +185,6 @@ class Group(dbMixin, db.Model):
         return self.name
 
     def is_admin(self, user):
-        # Read the association table directly: all_admin_view is a materialized
-        # view and goes stale until refreshed (e.g. for groups created via the API)
         admin_of = GroupsAndUsersAssociation.query.filter_by(
             user_id=user.id, group_id=self.id, group_admin=True
         )

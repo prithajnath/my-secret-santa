@@ -6,45 +6,56 @@ Invite your buddies and do a secret santa draw. Trust me, it will be really rand
 
 You'll need the following in your dev machine to get started
 
-* pipenv
-* Python 3.10
-* Docker (CLI and daemon)
-* docker-compose
+* [uv](https://docs.astral.sh/uv/)
+* Docker (CLI and daemon) with Compose
 
-### Clone and repository and `cd` into it
+### Clone the repository and `cd` into it
 ```
 git clone git@github.com:prithajnath/my-secret-santa.git && cd my-secret-santa
-```
-### Create and start a virtual environment
-```
-$ pipenv shell
 ```
 ### Install dependencies
 
 ```
-$ pipenv install
+$ uv sync
 ```
-### Run the test suite
+### Start the services
 
-Run the test script to see if your dev environment is set up correctly. This script spawns all the necessary services like db, redis, celery workers etc and runs the test suite inside the app container. If the tests pass it means your dev environment is all set!
+This starts the API (on https://localhost:9100), Postgres with PostGIS, Redis and the Celery worker. Migrations run when the web container starts.
 
 ```
-$ ./test.sh
+$ docker compose up --build -d
 ```
+
+### Run the tests
+
+The tests use [pytest-postgresql](https://github.com/dbfixtures/pytest-postgresql) to create a throwaway PostGIS database per test on the compose Postgres server, so run them in a container on the compose network:
+
+```
+$ docker compose run --rm --no-deps --entrypoint bash secret-santa-web \
+    -c "uv sync --frozen --group dev -q && pytest tests"
+```
+
+Set `TEST_DATABASE_URL` to point them at a different PostGIS server.
 
 ### Add the pre-commit hook
-The container uses a `requirements.txt` to keep its Python dependencies in check, but in our local environment we use `Pipfile` or `Pipfile.lock`. Every time you add a new dependency with `pipenv install ...` you need to update `requirements.txt`
-
-Copy the commit hook `.githooks/pre-commit` to your `.git` directory
+The hook checks that `uv.lock` matches `pyproject.toml` and that `requirements.txt` matches `uv.lock`
 
 ```
-cp .githooks/pre-commit .git/hooks/pre-commit
+git config core.hooksPath .githooks
 ```
-This aborts a commit if your `requirements.txt` is out of sync. Update `requirements.txt` with the following command and try commiting again
+If `requirements.txt` is out of sync, update it and try committing again
 
 ```
-$ pipenv lock -r > requirements.txt
-$ git commit -m "hey hey ho ho"
+$ uv export --format requirements.txt --no-dev -o requirements.txt
+```
+
+## Admin panel
+
+This service only serves the REST API (`/api`) and the admin panel (`/admin`); the web app is the separate Next.js frontend, and `/` redirects to it. Admins log in at `/admin/login/` with a username and password. To create an admin, or set a password for an existing one (e.g. an account made with Google sign-in):
+
+```
+$ flask createsuperuser
+$ flask set-password <username>
 ```
 
 ## REST API
@@ -55,7 +66,7 @@ The application includes a REST API layer for modern frontend frameworks (React,
 
 Interactive Swagger documentation is available at:
 ```
-http://localhost:9000/api/docs/
+https://localhost:9100/api/docs/
 ```
 
 ### Authentication
@@ -186,16 +197,6 @@ const handleOAuthCallback = async () => {
 - Username is auto-generated from Google profile name
 - `is_new_user` flag helps identify first-time users for onboarding flows
 - The `redirect_uri` must match exactly in both the URL request and callback exchange
-
-### NOTE: If your system Python is not 3.10
-This is probably fine but can cause issues. In that case, just add the deadsnakes PPA and download Python 3.10. DO NOT try changing your system Python by updating the `python3` symlink. If you had already created a virtualenv with pipenv, you'll have to remove it first and then create another virtualenv that uses Python 3.10
-
-```
-$ sudo apt install software-properties-common
-$ sudo add-apt-repository ppa:deadsnakes/ppa
-$ sudo apt update
-$ sudo apt install python3.8
-```
 
 ### NOTE: NGINX
 

@@ -14,6 +14,13 @@ All notable changes to this project will be documented in this file.
   - Searches for a cycle through every user, starting from a random node, following the highest-weight edges first and backtracking out of dead ends
   - Ensures randomness while avoiding previous year's pairings
 
+### Removed
+
+- **Retired the server-rendered web app.** This service now only serves `/api` and the Flask-Admin panel at `/admin`; `/` redirects to the frontend and every other old page (`/login`, `/profile`, `/groups`, `/santa`, `/google_oauth`, ...) returns a JSON 404
+  - Admins log in at `/admin/login/`; `flask set-password <username>` sets a password for an admin who only had Google sign-in
+  - Removed the old templates, `forms.py`, `lib/oauth/`, the Puppeteer/Jest tests, and the `flask-bootstrap`, `maya` and `flask-mail` dependencies
+  - Dropped the unused `all_admin_view` materialized view
+
 ### Changed
 
 - **Migrated from flask-script to Flask's built-in CLI** - `flask-script` is deprecated and incompatible with Flask 2.x+ (missing `flask._compat` module)

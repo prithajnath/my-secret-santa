@@ -10,29 +10,26 @@ dependencies = [
     "flasgger>=0.9.7.1",
     "flask>=3.1.2",
     "flask-admin>=2.0.2",
-    "flask-bootstrap>=3.3.7.1",
     "flask-jwt-extended>=4.7.1",
     "flask-login>=0.6.3",
-    "flask-mail>=0.10.0",
     "flask-marshmallow>=1.3.0",
     "marshmallow-sqlalchemy>=0.29.0",
     "flask-migrate>=4.1.0",
     "flask-wtf>=1.2.2",
     "gevent>=25.9.1",
-    "maya>=0.6.1",
     "passlib>=1.7.4",
     "psycopg2>=2.9.11",
     "redis>=5.0.0",
     "requests>=2.32.5",
     "sentry-sdk>=2.49.0",
     "faker>=40.1.2",
-    "pytest>=9.0.2",
     "gunicorn>=26.2.0",
     "geoalchemy2>=0.20.0",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0.2",
     "pytest-postgresql>=9.1.1",
 ]
 
