@@ -10,7 +10,14 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import and_, func
 
 from api import api_bp
-from api.utils import api_error, api_response, serialize_group
+from api.utils import (
+    BUDGET_SCHEMA,
+    api_error,
+    api_response,
+    parse_budget,
+    serialize_budget,
+    serialize_group,
+)
 from models import (
     EmailInvite,
     Group,
@@ -56,6 +63,7 @@ DRAW_IN_PROGRESS_WINDOW = timedelta(minutes=30)
                                         "type": "boolean",
                                         "example": False,
                                     },
+                                    "budget": BUDGET_SCHEMA,
                                     "member_count": {"type": "integer", "example": 5},
                                     "member_avatars": {
                                         "type": "array",
@@ -131,6 +139,7 @@ def api_list_groups():
                 "id": group.id,
                 "name": group.name,
                 "reveal_latest_pairs": group.reveal_latest_pairs,
+                "budget": serialize_budget(group),
                 "member_count": len(group.users),
                 "member_avatars": [u.user.avatar_url for u in group.users][:3],
                 "is_admin": assoc.group_admin,
@@ -168,6 +177,7 @@ def api_list_groups():
                             "type": "string",
                             "example": "Office Secret Santa 2024",
                         },
+                        "budget": BUDGET_SCHEMA,
                     },
                 },
             }
@@ -185,6 +195,7 @@ def api_list_groups():
                                 "id": {"type": "integer"},
                                 "name": {"type": "string"},
                                 "reveal_latest_pairs": {"type": "boolean"},
+                                "budget": BUDGET_SCHEMA,
                                 "created_at": {"type": "string", "format": "date-time"},
                                 "member_count": {"type": "integer"},
                                 "members": {
@@ -220,6 +231,11 @@ def api_create_group():
     if not group_name:
         return api_error("Group name cannot be empty", 400)
 
+    try:
+        budget_cents, budget_currency = parse_budget(data.get("budget"))
+    except ValueError as e:
+        return api_error(str(e), 400)
+
     # Check if group already exists
     existing_group = Group.query.filter_by(name=group_name).first()
     if existing_group:
@@ -227,6 +243,8 @@ def api_create_group():
 
     # Create the group
     new_group = Group(name=group_name)
+    new_group.budget_cents = budget_cents
+    new_group.budget_currency = budget_currency
     new_group.save_to_db(db)
 
     # Add creator as admin
@@ -267,6 +285,7 @@ def api_create_group():
                                 "id": {"type": "integer"},
                                 "name": {"type": "string"},
                                 "reveal_latest_pairs": {"type": "boolean"},
+                                "budget": BUDGET_SCHEMA,
                                 "created_at": {"type": "string", "format": "date-time"},
                                 "member_count": {"type": "integer"},
                                 "members": {
@@ -315,6 +334,75 @@ def api_get_group(group_id):
 
     if not membership:
         return api_error("You are not a member of this group", 403)
+
+    return api_response(serialize_group(group, include_members=True))
+
+
+@api_bp.route("/groups/<int:group_id>", methods=["PATCH"])
+@jwt_required()
+@swag_from(
+    {
+        "tags": ["Groups"],
+        "summary": "Update group settings",
+        "description": "Update a group's settings. Only group admins can perform this action. Send `budget: null` to remove the budget.",
+        "parameters": [
+            {
+                "name": "group_id",
+                "in": "path",
+                "type": "integer",
+                "required": True,
+                "description": "Group ID",
+            },
+            {
+                "name": "body",
+                "in": "body",
+                "required": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "budget": BUDGET_SCHEMA,
+                    },
+                },
+            },
+        ],
+        "responses": {
+            "200": {
+                "description": "Group updated; returns the group like GET /groups/{group_id}",
+            },
+            "400": {"description": "Validation error or nothing to update"},
+            "401": {"description": "Missing or invalid token"},
+            "403": {"description": "Only admins can update the group"},
+            "404": {"description": "Group not found"},
+        },
+    }
+)
+def api_update_group(group_id):
+    """Update group settings (admin only)."""
+    identity = get_jwt_identity()
+    current_user = db.session.get(User, identity)
+
+    if not current_user:
+        return api_error("User not found", 404)
+
+    group = db.session.get(Group, group_id)
+
+    if not group:
+        return api_error("Group not found", 404)
+
+    if not group.is_admin(current_user):
+        return api_error("Only group admins can update the group", 403)
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict) or "budget" not in data:
+        return api_error("Nothing to update; send 'budget'", 400)
+
+    try:
+        group.budget_cents, group.budget_currency = parse_budget(data["budget"])
+    except ValueError as e:
+        return api_error(str(e), 400)
+
+    group.save_to_db(db)
 
     return api_response(serialize_group(group, include_members=True))
 

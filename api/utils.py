@@ -40,6 +40,76 @@ def api_error(message, status_code=400, errors=None):
     return jsonify(response), status_code
 
 
+BUDGET_CURRENCIES = ("USD", "CAD", "GBP", "EUR", "INR", "AUD")
+DEFAULT_BUDGET_CURRENCY = "USD"
+# Sanity cap, in minor units (10,000.00 of any currency)
+MAX_BUDGET_CENTS = 1_000_000
+
+# Swagger schema for the budget field in request and response bodies
+BUDGET_SCHEMA = {
+    "type": "object",
+    "x-nullable": True,
+    "description": "Spending limit per gift, or null for no budget",
+    "properties": {
+        "amount_cents": {
+            "type": "integer",
+            "example": 2500,
+            "description": "Amount in the currency's minor unit, e.g. cents",
+        },
+        "currency": {
+            "type": "string",
+            "enum": list(BUDGET_CURRENCIES),
+            "default": DEFAULT_BUDGET_CURRENCY,
+        },
+    },
+}
+
+
+def parse_budget(budget):
+    """
+    Validate a budget from a request body.
+
+    Args:
+        budget: None to clear the budget, or {"amount_cents": int, "currency": str}
+            with currency optional (defaults to USD)
+
+    Returns:
+        (amount_cents, currency) tuple, with amount_cents None when clearing
+
+    Raises:
+        ValueError: with a message for the client
+    """
+    if budget is None:
+        return None, DEFAULT_BUDGET_CURRENCY
+
+    if not isinstance(budget, dict):
+        raise ValueError("'budget' must be an object or null")
+
+    amount = budget.get("amount_cents")
+    # bool is a subclass of int, so rule it out explicitly
+    if not isinstance(amount, int) or isinstance(amount, bool):
+        raise ValueError("'budget.amount_cents' must be a whole number")
+    if not 0 <= amount <= MAX_BUDGET_CENTS:
+        raise ValueError(
+            f"'budget.amount_cents' must be between 0 and {MAX_BUDGET_CENTS}"
+        )
+
+    currency = budget.get("currency", DEFAULT_BUDGET_CURRENCY)
+    if currency not in BUDGET_CURRENCIES:
+        raise ValueError(
+            f"'budget.currency' must be one of {', '.join(BUDGET_CURRENCIES)}"
+        )
+
+    return amount, currency
+
+
+def serialize_budget(group):
+    """A group's budget as {"amount_cents", "currency"}, or None if it has none."""
+    if group.budget_cents is None:
+        return None
+    return {"amount_cents": group.budget_cents, "currency": group.budget_currency}
+
+
 # geocode_status values meaning `location` holds a real coordinate
 VERIFIED_GEOCODE_STATUSES = ("autocomplete", "census", "geoapify")
 
@@ -103,6 +173,7 @@ def serialize_group(group, include_members=False):
         "id": group.id,
         "name": group.name,
         "reveal_latest_pairs": group.reveal_latest_pairs,
+        "budget": serialize_budget(group),
         "created_at": group.created_at.isoformat() if group.created_at else None,
         "member_count": len(group.users),
     }
