@@ -24,8 +24,9 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 
 def load_schema(host, port, user, dbname, password, **kwargs):
-    """Set up the template database: PostGIS plus every model's table."""
+    """Set up the template database: PostGIS, every model's table and the views."""
     from models import db
+    from sql.materialized_views.all_latest_pairs_view import ddl as latest_pairs_ddl
 
     engine = create_engine(
         URL.create(
@@ -40,6 +41,7 @@ def load_schema(host, port, user, dbname, password, **kwargs):
     with engine.begin() as connection:
         connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         db.metadata.create_all(connection)
+        connection.execute(text(latest_pairs_ddl))
     engine.dispose()
 
 

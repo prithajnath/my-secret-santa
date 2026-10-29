@@ -170,6 +170,11 @@ class Group(dbMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
     reveal_latest_pairs = db.Column(db.Boolean, default=False)
+    # Spending limit per gift, in the currency's minor unit (cents). None means no budget
+    budget_cents = db.Column(db.Integer, nullable=True)
+    budget_currency = db.Column(
+        db.String(3), nullable=False, default="USD", server_default="USD"
+    )
     users = db.relationship("GroupsAndUsersAssociation", backref="_group")
     created_at = db.Column(
         db.DateTime, default=func.current_timestamp(), nullable=False

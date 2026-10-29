@@ -12,7 +12,12 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import or_
 
 from api import api_bp
-from api.utils import api_error, api_response
+from api.utils import (
+    BUDGET_SCHEMA,
+    api_error,
+    api_response,
+    serialize_budget,
+)
 from models import Group, User, all_latest_pairs_view, db
 
 
@@ -42,6 +47,7 @@ from models import Group, User, all_latest_pairs_view, db
                                         "group_name": {"type": "string"},
                                         "channel_id": {"type": "string", "format": "uuid"},
                                         "reveal_enabled": {"type": "boolean"},
+                                        "budget": BUDGET_SCHEMA,
                                     },
                                 },
                             },
@@ -54,6 +60,7 @@ from models import Group, User, all_latest_pairs_view, db
                                         "group_id": {"type": "integer"},
                                         "group_name": {"type": "string"},
                                         "channel_id": {"type": "string", "format": "uuid"},
+                                        "budget": BUDGET_SCHEMA,
                                         "santee": {
                                             "type": "object",
                                             "properties": {
@@ -108,6 +115,7 @@ def api_get_santas_and_santees():
                     "group_name": pair.group_name,
                     "channel_id": str(pair.channel_id),
                     "reveal_enabled": group.reveal_latest_pairs if group else False,
+                    "budget": serialize_budget(group) if group else None,
                 }
             )
 
@@ -122,6 +130,7 @@ def api_get_santas_and_santees():
                     "group_id": group.id if group else None,
                     "group_name": pair.group_name,
                     "channel_id": str(pair.channel_id),
+                    "budget": serialize_budget(group) if group else None,
                     "santee": {
                         "username": pair.receiver_username,
                         "first_name": santee_user.first_name if santee_user else None,

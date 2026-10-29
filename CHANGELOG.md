@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Group budgets.** Admins can set a spending limit per gift when creating a group or later with the new admin-only `PATCH /api/groups/<id>`; `{"budget": null}` removes it
+  - Stored as `groups.budget_cents` (minor units, nullable) and `groups.budget_currency` (USD by default; CAD, GBP, EUR, INR and AUD also allowed)
+  - Returned as `"budget": {"amount_cents", "currency"}` or `null` on the group list, group detail, group creation and on each santa and santee in `/api/santa`
 - Added `marshmallow-sqlalchemy` dependency required by `flask-marshmallow` for `SQLAlchemyAutoSchema`
 - **New graph-based pairing method** (`_make_pairs_graph_based`) - Creates pairs using a graph traversal algorithm that:
   - Builds a graph where each user is a node and edges have random weights
