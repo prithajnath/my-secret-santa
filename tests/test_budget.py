@@ -73,6 +73,7 @@ def test_create_group_with_other_currency(client, admin):
 @pytest.mark.parametrize(
     "budget",
     [
+        {"amount_cents": 0},
         {"amount_cents": -1},
         {"amount_cents": 1_000_001},
         {"amount_cents": 25.5},

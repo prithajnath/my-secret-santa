@@ -89,9 +89,9 @@ def parse_budget(budget):
     # bool is a subclass of int, so rule it out explicitly
     if not isinstance(amount, int) or isinstance(amount, bool):
         raise ValueError("'budget.amount_cents' must be a whole number")
-    if not 0 <= amount <= MAX_BUDGET_CENTS:
+    if not 1 <= amount <= MAX_BUDGET_CENTS:
         raise ValueError(
-            f"'budget.amount_cents' must be between 0 and {MAX_BUDGET_CENTS}"
+            f"'budget.amount_cents' must be between 1 and {MAX_BUDGET_CENTS}"
         )
 
     currency = budget.get("currency", DEFAULT_BUDGET_CURRENCY)
